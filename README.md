@@ -86,7 +86,7 @@ docker compose up -d --build
 
 ### Render 一键部署
 
-仓库根目录新增 `render.yaml`（Docker 部署蓝图），可直接用于 Render 一键导入。
+仓库根目录包含 `render.yaml`（Docker 部署蓝图），可直接用于 Render 一键导入。
 
 1. 将仓库推送到 GitHub。
 2. 在 Render 创建 Web Service，选择该仓库。
@@ -112,6 +112,30 @@ docker compose --profile mysql up -d --build
 
 ```text
 shortlink:shortlink@tcp(db:3306)/ai_shortlink?charset=utf8mb4&parseTime=true&loc=Local
+```
+
+### 原生二进制部署
+
+生产部署目录统一为 `/opt/shortlink`。发布包包含一个内置静态资源和迁移 SQL 的单文件二进制、启动配置文件样例和 systemd 服务文件；Linux amd64 发布包默认静态链接，便于直接部署：
+
+```bash
+make release
+sudo mkdir -p /opt/shortlink
+sudo cp dist/ai-shortlink-linux-amd64/ai-shortlink dist/ai-shortlink-linux-amd64/shortlink.env.example dist/ai-shortlink-linux-amd64/ai-shortlink.service /opt/shortlink/
+cd /opt/shortlink
+sudo cp shortlink.env.example shortlink.env
+sudo chmod +x ./ai-shortlink
+./ai-shortlink
+```
+
+程序启动时会自动读取当前目录的 `shortlink.env`，也可以通过 `SHORTLINK_CONFIG=/opt/shortlink/shortlink.env` 指定配置文件。系统环境变量优先于配置文件，方便 systemd、Docker 或面板覆盖。首次启动后访问 `/setup`，安装向导会把数据库、站点、SMTP、管理员等运行时配置写入 `DATA_DIR/app-config.json`。
+
+如使用 systemd，发布包内的 `ai-shortlink.service` 已固定工作目录为 `/opt/shortlink`：
+
+```bash
+sudo cp /opt/shortlink/ai-shortlink.service /etc/systemd/system/ai-shortlink.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now ai-shortlink
 ```
 
 ### 本地编译运行
