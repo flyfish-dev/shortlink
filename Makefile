@@ -1,11 +1,14 @@
-.PHONY: test build run tidy zip
+.PHONY: test build release run tidy zip
 
 test:
 	go test ./...
 
 build:
 	mkdir -p bin
-	go build -o bin/ai-shortlink ./cmd/server
+	CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o bin/ai-shortlink ./cmd/server
+
+release:
+	./scripts/build_release.sh
 
 run:
 	go run ./cmd/server
