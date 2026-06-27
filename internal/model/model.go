@@ -110,6 +110,8 @@ type AdminDevice struct {
 type SystemSettings struct {
 	Installed       bool   `json:"installed"`
 	AppName         string `json:"app_name"`
+	AppNameZH       string `json:"app_name_zh"`
+	AppNameEN       string `json:"app_name_en"`
 	BaseURL         string `json:"base_url"`
 	DefaultLocale   string `json:"default_locale"`
 	LoginMode       string `json:"login_mode"`

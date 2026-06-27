@@ -23,8 +23,14 @@ func (s *Server) sendMagicLink(ctx context.Context, to, link string, expiresAt t
 	if username == "" {
 		username = from
 	}
-	subject := fmt.Sprintf("%s 登录链接", st.AppName)
-	body := fmt.Sprintf("请点击以下链接登录 %s：\n\n%s\n\n此链接将在 %s 过期，且只能使用一次。\n", st.AppName, link, expiresAt.Format("2006-01-02 15:04:05"))
+	appName := firstNonEmpty(st.AppName, st.AppNameZH, st.AppNameEN, "AI短链平台")
+	subject := fmt.Sprintf("%s 登录链接", appName)
+	body := fmt.Sprintf("请点击以下链接登录 %s：\n\n%s\n\n此链接将在 %s 过期，且只能使用一次。\n", appName, link, expiresAt.Format("2006-01-02 15:04:05"))
+	if strings.HasPrefix(strings.ToLower(st.DefaultLocale), "en") {
+		appName = firstNonEmpty(st.AppNameEN, st.AppName, "AI Shortlink")
+		subject = fmt.Sprintf("%s login link", appName)
+		body = fmt.Sprintf("Click the link below to sign in to %s:\n\n%s\n\nThis link expires at %s and can be used only once.\n", appName, link, expiresAt.Format("2006-01-02 15:04:05"))
+	}
 	msg := []byte("From: " + from + "\r\n" +
 		"To: " + to + "\r\n" +
 		"Subject: " + encodeMailSubject(subject) + "\r\n" +

@@ -71,6 +71,8 @@ type reviewPayload struct {
 
 type settingsPayload struct {
 	AppName       string `json:"app_name"`
+	AppNameZH     string `json:"app_name_zh"`
+	AppNameEN     string `json:"app_name_en"`
 	BaseURL       string `json:"base_url"`
 	DefaultLocale string `json:"default_locale"`
 	LoginMode     string `json:"login_mode"`
@@ -835,6 +837,8 @@ func (s *Server) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	st := model.SystemSettings{
 		Installed:     true,
 		AppName:       strings.TrimSpace(p.AppName),
+		AppNameZH:     strings.TrimSpace(p.AppNameZH),
+		AppNameEN:     strings.TrimSpace(p.AppNameEN),
 		BaseURL:       strings.TrimRight(strings.TrimSpace(p.BaseURL), "/"),
 		DefaultLocale: strings.TrimSpace(p.DefaultLocale),
 		LoginMode:     strings.TrimSpace(p.LoginMode),
@@ -846,8 +850,15 @@ func (s *Server) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		SMTPFrom:      strings.TrimSpace(p.SMTPFrom),
 	}
 	if st.AppName == "" {
-		st.AppName = "AI短链平台"
+		st.AppName = st.AppNameZH
 	}
+	if st.AppNameZH == "" {
+		st.AppNameZH = firstNonEmpty(st.AppName, "AI短链平台")
+	}
+	if st.AppNameEN == "" {
+		st.AppNameEN = firstNonEmpty(st.AppName, "AI Shortlink")
+	}
+	st.AppName = st.AppNameZH
 	if st.DefaultLocale == "" {
 		st.DefaultLocale = "zh-CN"
 	}

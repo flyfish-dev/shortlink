@@ -21,6 +21,8 @@ type setupPayload struct {
 	DSN           string `json:"dsn"`
 	SQLitePath    string `json:"sqlite_path"`
 	AppName       string `json:"app_name"`
+	AppNameZH     string `json:"app_name_zh"`
+	AppNameEN     string `json:"app_name_en"`
 	BaseURL       string `json:"base_url"`
 	DefaultLocale string `json:"default_locale"`
 	AdminEmail    string `json:"admin_email"`
@@ -127,7 +129,9 @@ func (s *Server) setupInstall(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, apiErr("migrate", err.Error()))
 		return
 	}
-	settings := model.SystemSettings{Installed: true, AppName: firstNonEmpty(p.AppName, "AI短链平台"), BaseURL: strings.TrimRight(strings.TrimSpace(p.BaseURL), "/"), DefaultLocale: firstNonEmpty(p.DefaultLocale, "zh-CN"), LoginMode: "hybrid", AdminEmail: p.AdminEmail, SMTPEnabled: p.SMTPEnabled, SMTPHost: strings.TrimSpace(p.SMTPHost), SMTPPort: p.SMTPPort, SMTPSecurity: firstNonEmpty(p.SMTPSecurity, "tls"), SMTPUsername: strings.TrimSpace(p.SMTPUsername), SMTPFrom: strings.TrimSpace(p.SMTPFrom)}
+	appNameZH := firstNonEmpty(p.AppNameZH, p.AppName, "AI短链平台")
+	appNameEN := firstNonEmpty(p.AppNameEN, "AI Shortlink")
+	settings := model.SystemSettings{Installed: true, AppName: appNameZH, AppNameZH: appNameZH, AppNameEN: appNameEN, BaseURL: strings.TrimRight(strings.TrimSpace(p.BaseURL), "/"), DefaultLocale: firstNonEmpty(p.DefaultLocale, "zh-CN"), LoginMode: "hybrid", AdminEmail: p.AdminEmail, SMTPEnabled: p.SMTPEnabled, SMTPHost: strings.TrimSpace(p.SMTPHost), SMTPPort: p.SMTPPort, SMTPSecurity: firstNonEmpty(p.SMTPSecurity, "tls"), SMTPUsername: strings.TrimSpace(p.SMTPUsername), SMTPFrom: strings.TrimSpace(p.SMTPFrom)}
 	if settings.SMTPEnabled {
 		if settings.SMTPHost == "" || settings.SMTPFrom == "" || settings.SMTPPort <= 0 {
 			writeJSON(w, 400, apiErr("bad_request", "启用 SMTP 时必须填写主机、端口和发信邮箱"))
