@@ -1,0 +1,20 @@
+[Unit]
+Description=AI Shortlink Platform
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/shortlink
+EnvironmentFile=/opt/shortlink/shortlink.env
+ExecStart=/opt/shortlink/ai-shortlink
+Restart=always
+RestartSec=3
+User=shortlink
+Group=shortlink
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/shortlink/data
+
+[Install]
+WantedBy=multi-user.target
