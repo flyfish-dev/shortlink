@@ -1,0 +1,38 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - app_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  db:
+    image: mariadb:11.4
+    profiles: ["mysql"]
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root-change-me
+      MARIADB_DATABASE: ai_shortlink
+      MARIADB_USER: shortlink
+      MARIADB_PASSWORD: shortlink
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1", "-uroot", "-proot-change-me"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  app_data:
+  mariadb_data:

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ai-shortlink
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATA_DIR
+        value: /app/data
+      - key: DATABASE_MODE
+        value: embedded
+      - key: TRUST_PROXY
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"

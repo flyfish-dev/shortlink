@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.AppName}} · 登录</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
+</head>
+<body class="login-body">
+  <main class="login-card auth-card">
+    <div class="auth-tools">
+      <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="切换主题"></button>
+      <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
+    </div>
+    <img class="brand-logo login-logo" src="/assets/brand.svg" alt="">
+    <h1 id="appName">{{.AppName}}</h1>
+    <p class="muted" data-i18n="login.desc">保留浏览器一键登录体验；绑定邮箱并配置 SMTP 后，可使用更适合公网环境的 Magic Link 登录。</p>
+
+    <section class="login-section" id="magicSection">
+      <h2 data-i18n="login.magicTitle">邮箱 Magic Link</h2>
+      <p class="muted" id="magicHint" data-i18n="login.magicHint">输入管理员邮箱，系统会发送 15 分钟有效的一次性登录链接。</p>
+      <label class="field">
+        <span data-i18n="settings.email">邮箱</span>
+        <input id="magicEmail" type="email" autocomplete="email" placeholder="admin@example.com">
+      </label>
+      <button id="magicBtn" class="primary full" data-i18n="login.sendMagic">发送登录链接</button>
+      <p id="magicMsg" class="message"></p>
+    </section>
+
+    <div class="divider"><span data-i18n="login.or">或</span></div>
+
+    <section class="login-section" id="oneClickSection">
+      <button id="loginBtn" class="ghost full" data-i18n="login.oneClick">使用本浏览器一键进入</button>
+      <p class="muted small" data-i18n="login.oneClickHint">仅当前浏览器已绑定时可直接进入；新设备请使用 Magic Link 或恢复 Key。</p>
+      <p id="msg" class="message"></p>
+    </section>
+
+    <div class="recover-panel" id="recoverPanel" hidden>
+      <div class="divider"><span data-i18n="login.recover">恢复登录</span></div>
+      <p class="muted" data-i18n="login.recoverHint">换设备、清理 Cookie 或登录令牌丢失时，粘贴后台保存的恢复 Key 重新绑定当前浏览器。</p>
+      <label class="field">
+        <span data-i18n="login.recoveryKey">恢复 Key</span>
+        <input id="recoveryKey" type="password" autocomplete="off" placeholder="aisk_...">
+      </label>
+      <button id="recoverBtn" class="ghost full" data-i18n="login.recoverBtn">使用恢复 Key 登录</button>
+      <p id="recoverMsg" class="message"></p>
+    </div>
+  </main>
+  <script>
+    const I18N = {
+      zh: {
+        'login.desc':'保留浏览器一键登录体验；绑定邮箱并配置 SMTP 后，可使用更适合公网环境的 Magic Link 登录。','login.magicTitle':'邮箱 Magic Link','login.magicHint':'输入管理员邮箱，系统会发送 15 分钟有效的一次性登录链接。','login.sendMagic':'发送登录链接','login.or':'或','login.oneClick':'使用本浏览器一键进入','login.oneClickHint':'仅当前浏览器已绑定时可直接进入；新设备请使用 Magic Link 或恢复 Key。','login.recover':'恢复登录','login.recoverHint':'换设备、清理 Cookie 或登录令牌丢失时，粘贴后台保存的恢复 Key 重新绑定当前浏览器。','login.recoveryKey':'恢复 Key','login.recoverBtn':'使用恢复 Key 登录','settings.email':'邮箱','msg.checking':'正在检查本浏览器登录令牌...','msg.sending':'正在发送登录链接...','msg.binding':'正在绑定当前浏览器...','msg.smtpMissing':'管理员尚未配置 SMTP，可先使用已绑定浏览器或恢复 Key 登录。','msg.magicOnly':'系统设置为 Magic Link 登录。','msg.oneClickOnly':'系统设置为浏览器一键登录。'
+      },
+      en: {
+        'login.desc':'Browser one-click login is preserved. After binding an email and SMTP, Magic Link is recommended for public deployment.','login.magicTitle':'Email Magic Link','login.magicHint':'Enter the admin email. A one-time login link valid for 15 minutes will be sent.','login.sendMagic':'Send login link','login.or':'or','login.oneClick':'Enter with this browser','login.oneClickHint':'Direct access only works for a bound browser. Use Magic Link or recovery key on new devices.','login.recover':'Recover access','login.recoverHint':'If cookies or device tokens are lost, paste the recovery key saved in the admin dashboard.','login.recoveryKey':'Recovery key','login.recoverBtn':'Login with recovery key','settings.email':'Email','msg.checking':'Checking browser token...','msg.sending':'Sending login link...','msg.binding':'Binding this browser...','msg.smtpMissing':'SMTP is not configured. Use a bound browser or recovery key.','msg.magicOnly':'System login mode is Magic Link.','msg.oneClickOnly':'System login mode is browser one-click.'
+      }
+    };
+    const detectLang = () => (localStorage.getItem('asl_lang') || navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    let lang = detectLang();
+    const t = k => I18N[lang][k] || I18N.zh[k] || k;
+    const themeIcon = dark => dark ? '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="theme-icon-fill" cx="12" cy="12" r="4.4"/><path class="theme-icon-accent" d="M12 2.9v2.2M12 18.9v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.9 12h2.2M18.9 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="theme-icon-fill" d="M19.3 14.4A7.4 7.4 0 0 1 9.6 4.7 8.2 8.2 0 1 0 19.3 14.4Z"/><path class="theme-icon-accent" d="M16.8 3.7l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/></svg>';
+    function syncLangToggle(){ const btn = document.getElementById('langToggle'); btn.dataset.locale = lang; btn.innerHTML = '<span>中文</span><span>EN</span>'; btn.setAttribute('aria-label', lang === 'zh' ? '切换为英文' : 'Switch to Chinese'); btn.setAttribute('title', btn.getAttribute('aria-label')); }
+    function applyLang(){ document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'; document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n)); syncLangToggle(); applyTheme(); }
+    function applyTheme(){ const saved = localStorage.getItem('asl_theme'); const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.dataset.theme = dark ? 'dark' : 'light'; const btn = document.getElementById('themeToggle'); btn.innerHTML = themeIcon(dark); btn.dataset.themeMode = dark ? 'dark' : 'light'; btn.setAttribute('aria-label', dark ? (lang === 'zh' ? '切换到浅色模式' : 'Switch to light mode') : (lang === 'zh' ? '切换到深色模式' : 'Switch to dark mode')); btn.setAttribute('title', btn.getAttribute('aria-label')); }
+    document.getElementById('langToggle').onclick = () => { lang = lang === 'zh' ? 'en' : 'zh'; localStorage.setItem('asl_lang', lang); applyLang(); };
+    document.getElementById('themeToggle').onclick = () => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('asl_theme', next); applyTheme(); };
+    applyTheme(); applyLang();
+
+    const btn = document.getElementById('loginBtn');
+    const msg = document.getElementById('msg');
+    const recoverPanel = document.getElementById('recoverPanel');
+    const recoverBtn = document.getElementById('recoverBtn');
+    const recoverMsg = document.getElementById('recoverMsg');
+    const magicBtn = document.getElementById('magicBtn');
+    const magicMsg = document.getElementById('magicMsg');
+
+    fetch('/api/public/bootstrap').then(r => r.json()).then(data => {
+      const st = data.settings || {};
+      if (st.app_name) document.getElementById('appName').textContent = st.app_name;
+      if (st.login_mode === 'magic') msg.textContent = t('msg.magicOnly');
+      if (st.login_mode === 'one_click') magicMsg.textContent = t('msg.oneClickOnly');
+      if (!st.smtp_enabled || !st.smtp_password_set) magicMsg.textContent = t('msg.smtpMissing');
+    }).catch(() => {});
+
+    magicBtn.addEventListener('click', async () => {
+      magicMsg.textContent = t('msg.sending');
+      magicBtn.disabled = true;
+      try {
+        const res = await fetch('/auth/magic/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: document.getElementById('magicEmail').value }) });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.message || '发送失败');
+        magicMsg.textContent = data.message || 'OK';
+      } catch (err) { magicMsg.textContent = err.message; }
+      finally { magicBtn.disabled = false; }
+    });
+
+    btn.addEventListener('click', async () => {
+      msg.textContent = t('msg.checking');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/auth/one-click', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw Object.assign(new Error(data.message || '登录失败'), { data });
+        location.href = data.redirect || '/admin';
+      } catch (err) {
+        msg.textContent = err.message;
+        recoverPanel.hidden = false;
+        btn.disabled = false;
+      }
+    });
+
+    recoverBtn.addEventListener('click', async () => {
+      recoverMsg.textContent = t('msg.binding');
+      recoverBtn.disabled = true;
+      try {
+        const res = await fetch('/auth/recover', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ recovery_key: document.getElementById('recoveryKey').value }) });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.message || '恢复登录失败');
+        location.href = data.redirect || '/admin';
+      } catch (err) { recoverMsg.textContent = err.message; recoverBtn.disabled = false; }
+    });
+  </script>
+</body>
+</html>

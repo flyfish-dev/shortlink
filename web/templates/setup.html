@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.AppName}} · 安装向导</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
+</head>
+<body class="login-body setup-body">
+  <main class="setup-card">
+    <div class="auth-tools">
+      <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="切换主题"></button>
+      <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
+    </div>
+    <div class="setup-head">
+      <img class="brand-logo login-logo" src="/assets/brand.svg" alt="">
+      <div><h1 data-i18n="setup.title">安装向导</h1><p class="muted" data-i18n="setup.desc">先选择数据库，再配置站点、管理员和可选 SMTP。完成后会自动绑定当前浏览器。</p></div>
+    </div>
+
+    <div class="tabs setup-tabs">
+      <button class="tab active" data-step="db" data-i18n="setup.stepDb">1. 数据库</button>
+      <button class="tab" data-step="site" data-i18n="setup.stepSite">2. 站点</button>
+      <button class="tab" data-step="admin" data-i18n="setup.stepAdmin">3. 管理员</button>
+      <button class="tab" data-step="smtp" data-i18n="setup.stepSMTP">4. SMTP</button>
+    </div>
+
+    <section class="tab-panel" id="step-db">
+      <div class="form-grid compact-grid">
+        <label class="field wide"><span data-i18n="setup.dbMode">数据库模式</span><select id="databaseMode"><option value="embedded" data-i18n="setup.embedded">内置嵌入式 SQLite（推荐轻量启动）</option><option value="mysql">MySQL / MariaDB</option></select></label>
+        <label class="field wide db-embedded"><span data-i18n="setup.sqlitePath">SQLite 文件路径</span><input id="sqlitePath" value="{{.SQLitePath}}"></label>
+        <label class="field wide db-mysql" hidden><span>MySQL / MariaDB DSN</span><input id="dsn" placeholder="user:pass@tcp(mysql:3306)/ai_shortlink?parseTime=true&charset=utf8mb4&loc=Local"></label>
+      </div>
+      <div class="form-actions"><button class="ghost" id="testDb" data-i18n="setup.testDb">测试并迁移数据库</button><button class="primary" data-next="site" data-i18n="common.next">下一步</button></div>
+    </section>
+
+    <section class="tab-panel" id="step-site" hidden>
+      <div class="form-grid compact-grid">
+        <label class="field"><span data-i18n="settings.appName">站点名称</span><input id="appName" value="AI短链平台"></label>
+        <label class="field"><span data-i18n="settings.locale">语言策略</span><select id="defaultLocale"><option value="auto" data-i18n="settings.autoLocale">自动匹配浏览器</option><option value="zh-CN">中文</option><option value="en-US">English</option></select></label>
+        <label class="field wide"><span data-i18n="settings.baseUrl">公网域名</span><input id="baseURL" value="{{.BaseURL}}" placeholder="https://s.example.com"></label>
+      </div>
+      <div class="form-actions"><button class="ghost" data-next="db" data-i18n="common.prev">上一步</button><button class="primary" data-next="admin" data-i18n="common.next">下一步</button></div>
+    </section>
+
+    <section class="tab-panel" id="step-admin" hidden>
+      <div class="form-grid compact-grid">
+        <label class="field"><span data-i18n="settings.email">管理员邮箱</span><input id="adminEmail" type="email" placeholder="admin@example.com"></label>
+        <label class="field"><span data-i18n="settings.name">管理员名称</span><input id="adminName" placeholder="Admin"></label>
+      </div>
+      <p class="muted" data-i18n="setup.adminTip">邮箱用于 Magic Link 登录和控制权恢复；浏览器一键登录仍会保留。</p>
+      <div class="form-actions"><button class="ghost" data-next="site" data-i18n="common.prev">上一步</button><button class="primary" data-next="smtp" data-i18n="common.next">下一步</button></div>
+    </section>
+
+    <section class="tab-panel" id="step-smtp" hidden>
+      <label class="checkline"><input id="smtpEnabled" type="checkbox"> <span data-i18n="settings.smtpEnabled">启用 SMTP / Magic Link</span></label>
+      <div class="form-grid compact-grid">
+        <label class="field"><span data-i18n="settings.smtpHost">SMTP 主机</span><input id="smtpHost" placeholder="smtp.example.com"></label>
+        <label class="field"><span data-i18n="settings.smtpPort">端口</span><input id="smtpPort" type="number" value="465"></label>
+        <label class="field"><span data-i18n="settings.smtpSecurity">安全协议</span><select id="smtpSecurity"><option value="tls">TLS/SSL</option><option value="starttls">STARTTLS</option><option value="plain">Plain</option></select></label>
+        <label class="field"><span data-i18n="settings.smtpUsername">用户名</span><input id="smtpUsername"></label>
+        <label class="field"><span data-i18n="settings.smtpPassword">密码 / 授权码</span><input id="smtpPassword" type="password"></label>
+        <label class="field"><span data-i18n="settings.smtpFrom">发信邮箱</span><input id="smtpFrom" type="email" placeholder="no-reply@example.com"></label>
+      </div>
+      <p class="muted" data-i18n="setup.smtpTip">SMTP 可以稍后在系统设置里补充。公网使用时建议启用 Magic Link。</p>
+      <div class="form-actions"><button class="ghost" data-next="admin" data-i18n="common.prev">上一步</button><button class="primary" id="installBtn" data-i18n="setup.install">完成安装</button></div>
+    </section>
+
+    <section id="result" hidden class="card install-result"></section>
+    <p id="msg" class="message"></p>
+  </main>
+<script>
+const I18N={zh:{'setup.title':'安装向导','setup.desc':'先选择数据库，再配置站点、管理员和可选 SMTP。完成后会自动绑定当前浏览器。','setup.stepDb':'1. 数据库','setup.stepSite':'2. 站点','setup.stepAdmin':'3. 管理员','setup.stepSMTP':'4. SMTP','setup.dbMode':'数据库模式','setup.embedded':'内置嵌入式 SQLite（推荐轻量启动）','setup.sqlitePath':'SQLite 文件路径','setup.testDb':'测试并迁移数据库','setup.adminTip':'邮箱用于 Magic Link 登录和控制权恢复；浏览器一键登录仍会保留。','setup.smtpTip':'SMTP 可以稍后在系统设置里补充。公网使用时建议启用 Magic Link。','setup.install':'完成安装','settings.appName':'站点名称','settings.locale':'语言策略','settings.autoLocale':'自动匹配浏览器','settings.baseUrl':'公网域名','settings.email':'管理员邮箱','settings.name':'管理员名称','settings.smtpEnabled':'启用 SMTP / Magic Link','settings.smtpHost':'SMTP 主机','settings.smtpPort':'端口','settings.smtpSecurity':'安全协议','settings.smtpUsername':'用户名','settings.smtpPassword':'密码 / 授权码','settings.smtpFrom':'发信邮箱','common.next':'下一步','common.prev':'上一步','msg.testing':'正在测试并迁移数据库...','msg.testOK':'数据库可用。','msg.installing':'正在安装...','msg.done':'安装完成。请复制恢复 Key 后进入后台。','msg.copy':'复制恢复 Key','msg.enter':'进入后台'},en:{'setup.title':'Setup wizard','setup.desc':'Choose a database, then configure site, admin and optional SMTP. This browser will be bound after setup.','setup.stepDb':'1. Database','setup.stepSite':'2. Site','setup.stepAdmin':'3. Admin','setup.stepSMTP':'4. SMTP','setup.dbMode':'Database mode','setup.embedded':'Embedded SQLite (recommended for lightweight start)','setup.sqlitePath':'SQLite file path','setup.testDb':'Test and migrate database','setup.adminTip':'Email is used for Magic Link login and recovery. Browser one-click login remains available.','setup.smtpTip':'SMTP can be configured later in system settings. Magic Link is recommended for public deployment.','setup.install':'Finish setup','settings.appName':'Site name','settings.locale':'Language policy','settings.autoLocale':'Auto match browser','settings.baseUrl':'Public domain','settings.email':'Admin email','settings.name':'Admin name','settings.smtpEnabled':'Enable SMTP / Magic Link','settings.smtpHost':'SMTP host','settings.smtpPort':'Port','settings.smtpSecurity':'Security','settings.smtpUsername':'Username','settings.smtpPassword':'Password / app token','settings.smtpFrom':'From email','common.next':'Next','common.prev':'Back','msg.testing':'Testing and migrating database...','msg.testOK':'Database is available.','msg.installing':'Installing...','msg.done':'Setup complete. Copy the recovery key, then enter the dashboard.','msg.copy':'Copy recovery key','msg.enter':'Enter dashboard'}};
+let lang=(localStorage.getItem('asl_lang')||navigator.language||'zh').toLowerCase().startsWith('zh')?'zh':'en';const t=k=>I18N[lang][k]||I18N.zh[k]||k;const themeIcon=dark=>dark?'<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="theme-icon-fill" cx="12" cy="12" r="4.4"/><path class="theme-icon-accent" d="M12 2.9v2.2M12 18.9v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.9 12h2.2M18.9 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path class="theme-icon-fill" d="M19.3 14.4A7.4 7.4 0 0 1 9.6 4.7 8.2 8.2 0 1 0 19.3 14.4Z"/><path class="theme-icon-accent" d="M16.8 3.7l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/></svg>';function syncLangToggle(){const btn=document.getElementById('langToggle');btn.dataset.locale=lang;btn.innerHTML='<span>中文</span><span>EN</span>';btn.setAttribute('aria-label',lang==='zh'?'切换为英文':'Switch to Chinese');btn.setAttribute('title',btn.getAttribute('aria-label'))}function applyLang(){document.documentElement.lang=lang==='zh'?'zh-CN':'en';document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));syncLangToggle();applyTheme()}function applyTheme(){const saved=localStorage.getItem('asl_theme');const dark=saved?saved==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=dark?'dark':'light';const btn=document.getElementById('themeToggle');btn.innerHTML=themeIcon(dark);btn.dataset.themeMode=dark?'dark':'light';btn.setAttribute('aria-label',dark?(lang==='zh'?'切换到浅色模式':'Switch to light mode'):(lang==='zh'?'切换到深色模式':'Switch to dark mode'));btn.setAttribute('title',btn.getAttribute('aria-label'))}document.getElementById('langToggle').onclick=()=>{lang=lang==='zh'?'en':'zh';localStorage.setItem('asl_lang',lang);applyLang()};document.getElementById('themeToggle').onclick=()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';localStorage.setItem('asl_theme',next);applyTheme()};applyTheme();applyLang();
+const $=id=>document.getElementById(id);const msg=$('msg');const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));function step(name){document.querySelectorAll('[data-step]').forEach(b=>b.classList.toggle('active',b.dataset.step===name));document.querySelectorAll('[id^="step-"]').forEach(p=>p.hidden=p.id!==`step-${name}`)}document.querySelectorAll('[data-step],[data-next]').forEach(b=>b.onclick=()=>step(b.dataset.step||b.dataset.next));$('databaseMode').onchange=()=>{const mysql=$('databaseMode').value==='mysql';document.querySelectorAll('.db-mysql').forEach(e=>e.hidden=!mysql);document.querySelectorAll('.db-embedded').forEach(e=>e.hidden=mysql)};function payload(){return{database_mode:$('databaseMode').value,dsn:$('dsn').value.trim(),sqlite_path:$('sqlitePath').value.trim(),app_name:$('appName').value.trim(),base_url:$('baseURL').value.trim(),default_locale:$('defaultLocale').value,admin_email:$('adminEmail').value.trim(),admin_name:$('adminName').value.trim(),smtp_enabled:$('smtpEnabled').checked,smtp_host:$('smtpHost').value.trim(),smtp_port:Number($('smtpPort').value||0),smtp_security:$('smtpSecurity').value,smtp_username:$('smtpUsername').value.trim(),smtp_password:$('smtpPassword').value,smtp_from:$('smtpFrom').value.trim()}}async function post(path,data){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)throw new Error(j.message||j.error||'Request failed');return j}$('testDb').onclick=async()=>{msg.textContent=t('msg.testing');try{await post('/api/setup/test-db',payload());msg.textContent=t('msg.testOK')}catch(e){msg.textContent=e.message}};$('installBtn').onclick=async()=>{msg.textContent=t('msg.installing');$('installBtn').disabled=true;try{const data=await post('/api/setup/install',payload());const key=data.recovery_key||'';$('result').hidden=false;$('result').innerHTML=`<h2>${t('msg.done')}</h2><code class="secret-line" id="rk">${esc(key)}</code><div class="form-actions compact"><button class="ghost" id="copyKey">${t('msg.copy')}</button><a class="button primary" href="${esc(data.redirect||'/admin')}">${t('msg.enter')}</a></div>`;$('copyKey').onclick=()=>navigator.clipboard.writeText(key);msg.textContent=''}catch(e){msg.textContent=e.message;$('installBtn').disabled=false}};
+</script>
+</body>
+</html>

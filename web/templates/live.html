@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>{{.Live.Title}} · {{.AppName}}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
+</head>
+<body class="public-body">
+  <main class="qr-card">
+    <div class="pill">{{.Live.Title}}</div>
+    <h1>{{.Live.GuideTitle}}</h1>
+    <p class="muted center">{{.Live.GuideText}}</p>
+    <div class="qr-wrap">
+      <img id="qrImage" src="{{.Item.QRImageURL}}" alt="{{.Item.Title}}" draggable="false">
+    </div>
+    <div class="hint-steps">
+      <span>1. 按住图片</span><span>2. 选择识别二维码</span><span>3. 完成添加/访问</span>
+    </div>
+    {{if .Item.TargetURL}}
+    <a class="primary full link-button" href="{{.Item.TargetURL}}" rel="nofollow noopener">打不开时点击访问</a>
+    {{end}}
+    <p class="tiny">当前展示：{{.Item.Title}}</p>
+  </main>
+  <script>
+    const send = () => navigator.sendBeacon && navigator.sendBeacon('{{.TrackURL}}', new Blob(['{}'], {type:'application/json'}));
+    let t;
+    const img = document.getElementById('qrImage');
+    img.addEventListener('touchstart', () => { t = setTimeout(send, 600); }, {passive:true});
+    img.addEventListener('touchend', () => clearTimeout(t), {passive:true});
+    img.addEventListener('contextmenu', send);
+  </script>
+</body>
+</html>
