@@ -6,34 +6,84 @@ import (
 	"strings"
 )
 
+// Options controls the visual style of the generated QR SVG.
+type Options struct {
+	Scale      int
+	Border     int
+	Foreground string
+	Background string
+	Shape      string // classic, rounded, dots
+}
+
 // SVG encodes text as a QR Code SVG using byte mode, error correction level L,
 // and QR versions 1-5. This covers the platform's public short URLs while
 // keeping the project dependency-free.
 func SVG(text string, scale, border int) (string, error) {
-	if scale <= 0 {
-		scale = 8
+	return StyledSVG(text, Options{Scale: scale, Border: border, Foreground: "#000000", Background: "#ffffff", Shape: "classic"})
+}
+
+func StyledSVG(text string, opt Options) (string, error) {
+	if opt.Scale <= 0 {
+		opt.Scale = 8
 	}
-	if border < 0 {
-		border = 4
+	if opt.Border < 0 {
+		opt.Border = 4
+	}
+	if strings.TrimSpace(opt.Foreground) == "" {
+		opt.Foreground = "#111827"
+	}
+	if strings.TrimSpace(opt.Background) == "" {
+		opt.Background = "#ffffff"
+	}
+	shape := strings.ToLower(strings.TrimSpace(opt.Shape))
+	if shape == "" {
+		shape = "rounded"
 	}
 	qr, err := encode([]byte(text))
 	if err != nil {
 		return "", err
 	}
-	size := qr.size + border*2
-	px := size * scale
+	size := qr.size + opt.Border*2
+	px := size * opt.Scale
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d" shape-rendering="crispEdges">`, size, size, px, px))
-	b.WriteString(`<rect width="100%" height="100%" fill="#fff"/>`)
-	b.WriteString(`<path fill="#000" d="`)
-	for y := 0; y < qr.size; y++ {
-		for x := 0; x < qr.size; x++ {
-			if qr.modules[y][x] {
-				b.WriteString(fmt.Sprintf("M%d %dh1v1h-1z", x+border, y+border))
+	crisp := ""
+	if shape == "classic" {
+		crisp = ` shape-rendering="crispEdges"`
+	}
+	b.WriteString(fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d"%s>`, size, size, px, px, crisp))
+	b.WriteString(fmt.Sprintf(`<rect width="100%%" height="100%%" rx="3" fill="%s"/>`, html.EscapeString(opt.Background)))
+	switch shape {
+	case "dots":
+		b.WriteString(fmt.Sprintf(`<g fill="%s">`, html.EscapeString(opt.Foreground)))
+		for y := 0; y < qr.size; y++ {
+			for x := 0; x < qr.size; x++ {
+				if qr.modules[y][x] {
+					b.WriteString(fmt.Sprintf(`<circle cx="%g" cy="%g" r="0.43"/>`, float64(x+opt.Border)+0.5, float64(y+opt.Border)+0.5))
+				}
 			}
 		}
+		b.WriteString(`</g>`)
+	case "rounded":
+		b.WriteString(fmt.Sprintf(`<g fill="%s">`, html.EscapeString(opt.Foreground)))
+		for y := 0; y < qr.size; y++ {
+			for x := 0; x < qr.size; x++ {
+				if qr.modules[y][x] {
+					b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="1" height="1" rx="0.22"/>`, x+opt.Border, y+opt.Border))
+				}
+			}
+		}
+		b.WriteString(`</g>`)
+	default:
+		b.WriteString(fmt.Sprintf(`<path fill="%s" d="`, html.EscapeString(opt.Foreground)))
+		for y := 0; y < qr.size; y++ {
+			for x := 0; x < qr.size; x++ {
+				if qr.modules[y][x] {
+					b.WriteString(fmt.Sprintf("M%d %dh1v1h-1z", x+opt.Border, y+opt.Border))
+				}
+			}
+		}
+		b.WriteString(`"/>`)
 	}
-	b.WriteString(`"/>`)
 	b.WriteString(fmt.Sprintf(`<title>%s</title>`, html.EscapeString(text)))
 	b.WriteString(`</svg>`)
 	return b.String(), nil
