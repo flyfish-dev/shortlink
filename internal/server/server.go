@@ -28,12 +28,18 @@ type ctxKey string
 
 const deviceIDKey ctxKey = "deviceID"
 
+type actorInfo struct {
+	Device  *model.AdminDevice
+	Account *model.AdminAccount
+}
+
+func (a *actorInfo) IsAdmin() bool { return a != nil && a.Account != nil && a.Account.Role == "admin" }
+
 type Server struct {
-	cfg          config.Config
-	storeValue   atomic.Value // stores *store.Store
-	auth         *auth.Manager
-	tpl          *template.Template
-	assetVersion string
+	cfg        config.Config
+	storeValue atomic.Value // stores *store.Store
+	auth       *auth.Manager
+	tpl        *template.Template
 }
 
 func New(cfg config.Config, st *store.Store) (*Server, error) {
@@ -44,7 +50,7 @@ func New(cfg config.Config, st *store.Store) (*Server, error) {
 	if err := os.MkdirAll(filepath.Join(cfg.DataDir, "uploads"), 0755); err != nil {
 		return nil, err
 	}
-	srv := &Server{cfg: cfg, auth: auth.NewManager(cfg.AppSecret, cfg.SessionTTL, cfg.CookieSecure), tpl: t, assetVersion: strconv.FormatInt(time.Now().Unix(), 10)}
+	srv := &Server{cfg: cfg, auth: auth.NewManager(cfg.AppSecret, cfg.SessionTTL, cfg.CookieSecure), tpl: t}
 	srv.setStore(st)
 	return srv, nil
 }
@@ -285,6 +291,22 @@ func (s *Server) createAdminAccount(ctx context.Context, emailAndName ...string)
 	return acct, recoveryKey, nil
 }
 
+func (s *Server) createUserAccount(ctx context.Context, email, name string) (*model.AdminAccount, string, error) {
+	recoveryKey, err := auth.NewRecoveryKey()
+	if err != nil {
+		return nil, "", err
+	}
+	cipherText, err := s.auth.Encrypt(recoveryKey)
+	if err != nil {
+		return nil, "", err
+	}
+	acct, err := s.store().CreateUserAccount(ctx, strings.TrimSpace(email), strings.TrimSpace(name), s.auth.RecoveryHash(recoveryKey), cipherText)
+	if err != nil {
+		return nil, "", err
+	}
+	return acct, recoveryKey, nil
+}
+
 func (s *Server) ensureDeviceAccount(ctx context.Context, dev *model.AdminDevice) (*model.AdminAccount, string, error) {
 	if dev.AccountID != 0 {
 		acct, err := s.store().GetAdminAccount(ctx, dev.AccountID)
@@ -385,22 +407,39 @@ func (s *Server) validateSession(r *http.Request) (*auth.Session, bool) {
 	if err != nil || dev.BrowserHash != s.auth.Hash(browserID) {
 		return nil, false
 	}
+	if dev.AccountID != 0 {
+		acct, err := s.store().GetAdminAccount(r.Context(), dev.AccountID)
+		if err != nil || acct.Status != "active" {
+			return nil, false
+		}
+	}
 	ip := util.ClientIP(r, s.cfg.TrustProxy)
 	_ = s.store().TouchAdminDevice(r.Context(), sess.DeviceID, ip, util.Truncate(r.UserAgent(), 512))
 	return sess, true
 }
 
+func (s *Server) currentActor(ctx context.Context) (*actorInfo, error) {
+	id := deviceIDFromContext(ctx)
+	if id == nil {
+		return nil, store.ErrNotFound
+	}
+	dev, err := s.store().GetAdminDevice(ctx, *id)
+	if err != nil {
+		return nil, err
+	}
+	acct, _, err := s.ensureDeviceAccount(ctx, dev)
+	if err != nil {
+		return nil, err
+	}
+	if acct.Status != "active" {
+		return nil, store.ErrNotFound
+	}
+	return &actorInfo{Device: dev, Account: acct}, nil
+}
+
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	viewData := map[string]any{"AssetVersion": s.assetVersion}
-	if m, ok := data.(map[string]any); ok {
-		for k, v := range m {
-			viewData[k] = v
-		}
-	} else if data != nil {
-		viewData["Data"] = data
-	}
-	if err := s.tpl.ExecuteTemplate(w, name, viewData); err != nil {
+	if err := s.tpl.ExecuteTemplate(w, name, data); err != nil {
 		log.Printf("template %s: %v", name, err)
 	}
 }
