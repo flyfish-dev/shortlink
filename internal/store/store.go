@@ -44,7 +44,17 @@ func (s *Store) CountAdminAccounts(ctx context.Context) (int64, error) {
 }
 
 func (s *Store) CreateAdminAccount(ctx context.Context, email, name, recoveryKeyHash, recoveryKeyCipher string) (*model.AdminAccount, error) {
-	res, err := s.db.ExecContext(ctx, `INSERT INTO admin_accounts(email,name,recovery_key_hash,recovery_key_cipher) VALUES(?,?,?,?)`, nullString(email), strings.TrimSpace(name), recoveryKeyHash, recoveryKeyCipher)
+	return s.CreateAccount(ctx, email, name, "admin", "active", recoveryKeyHash, recoveryKeyCipher)
+}
+
+func (s *Store) CreateUserAccount(ctx context.Context, email, name, recoveryKeyHash, recoveryKeyCipher string) (*model.AdminAccount, error) {
+	return s.CreateAccount(ctx, email, name, "user", "active", recoveryKeyHash, recoveryKeyCipher)
+}
+
+func (s *Store) CreateAccount(ctx context.Context, email, name, role, status, recoveryKeyHash, recoveryKeyCipher string) (*model.AdminAccount, error) {
+	role = normalizeRole(role)
+	status = normalizeAccountStatus(status)
+	res, err := s.db.ExecContext(ctx, `INSERT INTO admin_accounts(email,name,role,status,recovery_key_hash,recovery_key_cipher) VALUES(?,?,?,?,?,?)`, nullString(email), strings.TrimSpace(name), role, status, recoveryKeyHash, recoveryKeyCipher)
 	if err != nil {
 		return nil, err
 	}
@@ -89,14 +99,61 @@ func (s *Store) UpdateAdminAccountEmailName(ctx context.Context, id int64, email
 	return s.GetAdminAccount(ctx, id)
 }
 
+func (s *Store) ListAdminAccounts(ctx context.Context, q string, limit, offset int) ([]model.AdminAccount, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 100
+	}
+	base := adminAccountSelectSQL()
+	var rows *sql.Rows
+	var err error
+	if strings.TrimSpace(q) != "" {
+		like := "%" + strings.TrimSpace(q) + "%"
+		rows, err = s.db.QueryContext(ctx, base+` WHERE email LIKE ? OR name LIKE ? OR role LIKE ? OR status LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?`, like, like, like, like, limit, offset)
+	} else {
+		rows, err = s.db.QueryContext(ctx, base+` ORDER BY id DESC LIMIT ? OFFSET ?`, limit, offset)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []model.AdminAccount{}
+	for rows.Next() {
+		acct, err := scanAdminAccount(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *acct)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) UpdateAdminAccountRoleStatus(ctx context.Context, id int64, name, role, status string) (*model.AdminAccount, error) {
+	role = normalizeRole(role)
+	status = normalizeAccountStatus(status)
+	res, err := s.db.ExecContext(ctx, `UPDATE admin_accounts SET name=?, role=?, status=?, updated_at=? WHERE id=?`, strings.TrimSpace(name), role, status, now(), id)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, ErrNotFound
+	}
+	return s.GetAdminAccount(ctx, id)
+}
+
+func (s *Store) CountActiveAdmins(ctx context.Context) (int64, error) {
+	var n int64
+	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM admin_accounts WHERE role='admin' AND status='active'`).Scan(&n)
+	return n, err
+}
+
 func adminAccountSelectSQL() string {
-	return `SELECT id, email, name, recovery_key_hash, recovery_key_cipher, created_at, updated_at FROM admin_accounts`
+	return `SELECT id, email, name, role, status, recovery_key_hash, recovery_key_cipher, created_at, updated_at FROM admin_accounts`
 }
 
 func scanAdminAccount(scanner interface{ Scan(dest ...any) error }) (*model.AdminAccount, error) {
 	var a model.AdminAccount
 	var email sql.NullString
-	if err := scanner.Scan(&a.ID, &email, &a.Name, &a.RecoveryKeyHash, &a.RecoveryKeyCipher, &a.CreatedAt, &a.UpdatedAt); err != nil {
+	if err := scanner.Scan(&a.ID, &email, &a.Name, &a.Role, &a.Status, &a.RecoveryKeyHash, &a.RecoveryKeyCipher, &a.CreatedAt, &a.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -105,7 +162,25 @@ func scanAdminAccount(scanner interface{ Scan(dest ...any) error }) (*model.Admi
 	if email.Valid {
 		a.Email = email.String
 	}
+	a.Role = normalizeRole(a.Role)
+	a.Status = normalizeAccountStatus(a.Status)
 	return &a, nil
+}
+
+func normalizeRole(role string) string {
+	role = strings.ToLower(strings.TrimSpace(role))
+	if role == "admin" {
+		return "admin"
+	}
+	return "user"
+}
+
+func normalizeAccountStatus(status string) string {
+	status = strings.ToLower(strings.TrimSpace(status))
+	if status == "disabled" {
+		return "disabled"
+	}
+	return "active"
 }
 
 func (s *Store) FindAdminDevice(ctx context.Context, browserHash, ipHash string) (*model.AdminDevice, error) {
@@ -223,7 +298,7 @@ func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
 		return "", err
 	}
 	if v.Valid {
-		return v.String, nil
+		return v.String
 	}
 	return "", nil
 }
@@ -258,12 +333,50 @@ func (s *Store) Overview(ctx context.Context) (*model.Overview, error) {
 	settings, _ := s.GetSettings(ctx)
 	o.SMTPConfigured = settingsBool(settings, "smtp_enabled") && strings.TrimSpace(settings["smtp_host"]) != "" && strings.TrimSpace(settings["smtp_from"]) != "" && strings.TrimSpace(settings["smtp_password_cipher"]) != ""
 	o.BaseURLConfigured = strings.TrimSpace(settings["base_url"]) != ""
+	_ = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM admin_accounts WHERE role='user'").Scan(&o.Users)
+	return &o, nil
+}
+
+func (s *Store) OverviewForAccount(ctx context.Context, accountID int64, isAdmin bool) (*model.Overview, error) {
+	if isAdmin {
+		return s.Overview(ctx)
+	}
+	var o model.Overview
+	n := now()
+	start := beginningOfDay(n)
+	queries := []struct {
+		sql  string
+		args []any
+		dest *int64
+	}{
+		{"SELECT COUNT(*) FROM short_links WHERE owner_account_id=?", []any{accountID}, &o.ShortLinks},
+		{"SELECT COUNT(*) FROM short_links WHERE owner_account_id=? AND approval_status='pending'", []any{accountID}, &o.ShortPending},
+		{"SELECT COUNT(*) FROM live_qrs WHERE owner_account_id=?", []any{accountID}, &o.LiveQRs},
+		{"SELECT COUNT(*) FROM live_qrs WHERE owner_account_id=? AND approval_status='pending'", []any{accountID}, &o.LivePending},
+		{"SELECT COUNT(*) FROM live_qr_items i JOIN live_qrs l ON l.id=i.live_qr_id WHERE l.owner_account_id=? AND i.approval_status='pending'", []any{accountID}, &o.LiveItemsPending},
+		{"SELECT COUNT(*) FROM live_qr_items i JOIN live_qrs l ON l.id=i.live_qr_id WHERE l.owner_account_id=? AND i.status='active' AND i.approval_status='approved' AND (i.expires_at IS NULL OR i.expires_at > ?) AND (i.starts_at IS NULL OR i.starts_at <= ?)", []any{accountID, n, n}, &o.LiveItemsActive},
+		{"SELECT COUNT(*) FROM visit_logs v JOIN short_links s ON s.id=v.resource_id AND v.resource_type='short_link' WHERE s.owner_account_id=? AND v.created_at >= ?", []any{accountID, start}, &o.VisitsToday},
+		{"SELECT COUNT(*) FROM visit_logs v JOIN short_links s ON s.id=v.resource_id AND v.resource_type='short_link' WHERE s.owner_account_id=?", []any{accountID}, &o.VisitsTotal},
+	}
+	for _, q := range queries {
+		if err := s.db.QueryRowContext(ctx, q.sql, q.args...).Scan(q.dest); err != nil {
+			return nil, err
+		}
+	}
+	var todayLive, totalLive int64
+	_ = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM visit_logs v JOIN live_qrs l ON l.id=v.resource_id AND v.resource_type='live_qr' WHERE l.owner_account_id=? AND v.created_at >= ?", accountID, start).Scan(&todayLive)
+	_ = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM visit_logs v JOIN live_qrs l ON l.id=v.resource_id AND v.resource_type='live_qr' WHERE l.owner_account_id=?", accountID).Scan(&totalLive)
+	o.VisitsToday += todayLive
+	o.VisitsTotal += totalLive
+	settings, _ := s.GetSettings(ctx)
+	o.SMTPConfigured = settingsBool(settings, "smtp_enabled") && strings.TrimSpace(settings["smtp_host"]) != "" && strings.TrimSpace(settings["smtp_from"]) != "" && strings.TrimSpace(settings["smtp_password_cipher"]) != ""
+	o.BaseURLConfigured = strings.TrimSpace(settings["base_url"]) != ""
 	return &o, nil
 }
 
 func (s *Store) CreateShortLink(ctx context.Context, in *model.ShortLink) (*model.ShortLink, error) {
 	normalizeShortLink(in)
-	res, err := s.db.ExecContext(ctx, `INSERT INTO short_links(code,title,target_url,status,approval_status,redirect_type,starts_at,expires_at,max_visits,fallback_url,remark) VALUES(?,?,?,?,?,?,?,?,?,?,?)`, in.Code, in.Title, in.TargetURL, in.Status, "pending", in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark))
+	res, err := s.db.ExecContext(ctx, `INSERT INTO short_links(owner_account_id,code,title,target_url,status,approval_status,redirect_type,starts_at,expires_at,max_visits,fallback_url,remark,qr_style,qr_foreground,qr_background) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, in.TargetURL, in.Status, "pending", in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground)
 	if err != nil {
 		return nil, err
 	}
@@ -279,9 +392,9 @@ func (s *Store) UpdateShortLink(ctx context.Context, id int64, in *model.ShortLi
 	}
 	var res sql.Result
 	if shortLinkConfigEqual(current, in) {
-		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), now(), id)
+		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
 	} else {
-		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), now(), id)
+		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
 	}
 	if err != nil {
 		return nil, err
@@ -299,6 +412,7 @@ func normalizeShortLink(in *model.ShortLink) {
 	if in.Status == "" {
 		in.Status = "active"
 	}
+	normalizeQRStyle(&in.QRStyle, &in.QRForeground, &in.QRBackground)
 }
 
 func (s *Store) ReviewShortLink(ctx context.Context, id int64, status, note string) (*model.ShortLink, error) {
@@ -341,18 +455,32 @@ func (s *Store) GetShortLinkByCode(ctx context.Context, code string) (*model.Sho
 }
 
 func (s *Store) ListShortLinks(ctx context.Context, q string, limit, offset int) ([]model.ShortLink, error) {
+	return s.ListShortLinksForAccount(ctx, q, limit, offset, 0, true)
+}
+
+func (s *Store) ListShortLinksForAccount(ctx context.Context, q string, limit, offset int, accountID int64, isAdmin bool) ([]model.ShortLink, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
 	base := shortSelectSQL()
-	var rows *sql.Rows
-	var err error
+	clauses := []string{}
+	args := []any{}
+	if !isAdmin {
+		clauses = append(clauses, "owner_account_id=?")
+		args = append(args, accountID)
+	}
 	if strings.TrimSpace(q) != "" {
 		like := "%" + strings.TrimSpace(q) + "%"
-		rows, err = s.db.QueryContext(ctx, base+" WHERE code LIKE ? OR title LIKE ? OR target_url LIKE ? OR approval_status LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?", like, like, like, like, limit, offset)
-	} else {
-		rows, err = s.db.QueryContext(ctx, base+" ORDER BY id DESC LIMIT ? OFFSET ?", limit, offset)
+		clauses = append(clauses, "(code LIKE ? OR title LIKE ? OR target_url LIKE ? OR approval_status LIKE ?)")
+		args = append(args, like, like, like, like)
 	}
+	query := base
+	if len(clauses) > 0 {
+		query += " WHERE " + strings.Join(clauses, " AND ")
+	}
+	query += " ORDER BY id DESC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -374,19 +502,33 @@ func (s *Store) IncrementShortVisit(ctx context.Context, id int64) error {
 }
 
 func shortSelectSQL() string {
-	return `SELECT id, code, title, target_url, status, approval_status, approved_at, reviewed_at, review_note, redirect_type, starts_at, expires_at, max_visits, visit_count, fallback_url, remark, created_at, updated_at FROM short_links`
+	return `SELECT id, owner_account_id, code, title, target_url, status, approval_status, approved_at, reviewed_at, review_note, redirect_type, starts_at, expires_at, max_visits, visit_count, fallback_url, remark, qr_style, qr_foreground, qr_background, created_at, updated_at FROM short_links`
 }
 
 func scanShort(scanner interface{ Scan(dest ...any) error }) (*model.ShortLink, error) {
 	var x model.ShortLink
 	var starts, expires, approved, reviewed sql.NullTime
-	var fallback, remark, note sql.NullString
-	if err := scanner.Scan(&x.ID, &x.Code, &x.Title, &x.TargetURL, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RedirectType, &starts, &expires, &x.MaxVisits, &x.VisitCount, &fallback, &remark, &x.CreatedAt, &x.UpdatedAt); err != nil {
+	var owner sql.NullInt64
+	var fallback, remark, note, qrStyle, qrForeground, qrBackground sql.NullString
+	if err := scanner.Scan(&x.ID, &owner, &x.Code, &x.Title, &x.TargetURL, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RedirectType, &starts, &expires, &x.MaxVisits, &x.VisitCount, &fallback, &remark, &qrStyle, &qrForeground, &qrBackground, &x.CreatedAt, &x.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
+	if owner.Valid {
+		x.OwnerAccountID = owner.Int64
+	}
+	if qrStyle.Valid {
+		x.QRStyle = qrStyle.String
+	}
+	if qrForeground.Valid {
+		x.QRForeground = qrForeground.String
+	}
+	if qrBackground.Valid {
+		x.QRBackground = qrBackground.String
+	}
+	normalizeQRStyle(&x.QRStyle, &x.QRForeground, &x.QRBackground)
 	if x.ApprovalStatus == "" {
 		x.ApprovalStatus = "pending"
 	}
@@ -416,7 +558,7 @@ func scanShort(scanner interface{ Scan(dest ...any) error }) (*model.ShortLink, 
 
 func (s *Store) CreateLiveQR(ctx context.Context, in *model.LiveQR) (*model.LiveQR, error) {
 	normalizeLiveQR(in)
-	res, err := s.db.ExecContext(ctx, `INSERT INTO live_qrs(code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url) VALUES(?,?,?,?,?,?,?,?,?)`, in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL))
+	res, err := s.db.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +568,7 @@ func (s *Store) CreateLiveQR(ctx context.Context, in *model.LiveQR) (*model.Live
 
 func (s *Store) UpdateLiveQR(ctx context.Context, id int64, in *model.LiveQR) (*model.LiveQR, error) {
 	normalizeLiveQR(in)
-	res, err := s.db.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), now(), id)
+	res, err := s.db.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +586,7 @@ func (s *Store) SaveLiveQRBundle(ctx context.Context, id int64, in *model.LiveQR
 	}
 	defer func() { _ = tx.Rollback() }()
 	if id == 0 {
-		res, err := tx.ExecContext(ctx, `INSERT INTO live_qrs(code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url) VALUES(?,?,?,?,?,?,?,?,?)`, in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL))
+		res, err := tx.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground)
 		if err != nil {
 			return nil, err
 		}
@@ -456,9 +598,9 @@ func (s *Store) SaveLiveQRBundle(ctx context.Context, id int64, in *model.LiveQR
 		}
 		var res sql.Result
 		if liveQRConfigEqual(current, in) {
-			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), now(), id)
+			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
 		} else {
-			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), now(), id)
+			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
 		}
 		if err != nil {
 			return nil, err
@@ -526,6 +668,7 @@ func normalizeLiveQR(in *model.LiveQR) {
 	if in.GuideText == "" {
 		in.GuideText = "请长按下方二维码图片，选择“识别图中二维码”完成添加或访问。"
 	}
+	normalizeQRStyle(&in.QRStyle, &in.QRForeground, &in.QRBackground)
 }
 
 func (s *Store) ReviewLiveQR(ctx context.Context, id int64, status, note string, includeItems bool) (*model.LiveQR, error) {
@@ -581,18 +724,32 @@ func (s *Store) GetLiveQRByCode(ctx context.Context, code string) (*model.LiveQR
 }
 
 func (s *Store) ListLiveQRs(ctx context.Context, q string, limit, offset int) ([]model.LiveQR, error) {
+	return s.ListLiveQRsForAccount(ctx, q, limit, offset, 0, true)
+}
+
+func (s *Store) ListLiveQRsForAccount(ctx context.Context, q string, limit, offset int, accountID int64, isAdmin bool) ([]model.LiveQR, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
 	base := liveSelectSQL()
-	var rows *sql.Rows
-	var err error
+	clauses := []string{}
+	args := []any{}
+	if !isAdmin {
+		clauses = append(clauses, "owner_account_id=?")
+		args = append(args, accountID)
+	}
 	if strings.TrimSpace(q) != "" {
 		like := "%" + strings.TrimSpace(q) + "%"
-		rows, err = s.db.QueryContext(ctx, base+" WHERE code LIKE ? OR title LIKE ? OR description LIKE ? OR approval_status LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?", like, like, like, like, limit, offset)
-	} else {
-		rows, err = s.db.QueryContext(ctx, base+" ORDER BY id DESC LIMIT ? OFFSET ?", limit, offset)
+		clauses = append(clauses, "(code LIKE ? OR title LIKE ? OR description LIKE ? OR approval_status LIKE ?)")
+		args = append(args, like, like, like, like)
 	}
+	query := base
+	if len(clauses) > 0 {
+		query += " WHERE " + strings.Join(clauses, " AND ")
+	}
+	query += " ORDER BY id DESC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -609,18 +766,22 @@ func (s *Store) ListLiveQRs(ctx context.Context, q string, limit, offset int) ([
 }
 
 func liveSelectSQL() string {
-	return `SELECT id, code, title, description, status, approval_status, approved_at, reviewed_at, review_note, rotation_strategy, current_cursor, visit_count, guide_title, guide_text, fallback_url, created_at, updated_at FROM live_qrs`
+	return `SELECT id, owner_account_id, code, title, description, status, approval_status, approved_at, reviewed_at, review_note, rotation_strategy, current_cursor, visit_count, guide_title, guide_text, fallback_url, qr_style, qr_foreground, qr_background, created_at, updated_at FROM live_qrs`
 }
 
 func scanLive(scanner interface{ Scan(dest ...any) error }) (*model.LiveQR, error) {
 	var x model.LiveQR
-	var description, fallback, note sql.NullString
+	var description, fallback, note, qrStyle, qrForeground, qrBackground sql.NullString
+	var owner sql.NullInt64
 	var approved, reviewed sql.NullTime
-	if err := scanner.Scan(&x.ID, &x.Code, &x.Title, &description, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RotationStrategy, &x.CurrentCursor, &x.VisitCount, &x.GuideTitle, &x.GuideText, &fallback, &x.CreatedAt, &x.UpdatedAt); err != nil {
+	if err := scanner.Scan(&x.ID, &owner, &x.Code, &x.Title, &description, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RotationStrategy, &x.CurrentCursor, &x.VisitCount, &x.GuideTitle, &x.GuideText, &fallback, &qrStyle, &qrForeground, &qrBackground, &x.CreatedAt, &x.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
+	}
+	if owner.Valid {
+		x.OwnerAccountID = owner.Int64
 	}
 	if description.Valid {
 		x.Description = description.String
@@ -637,6 +798,16 @@ func scanLive(scanner interface{ Scan(dest ...any) error }) (*model.LiveQR, erro
 	if reviewed.Valid {
 		x.ReviewedAt = &reviewed.Time
 	}
+	if qrStyle.Valid {
+		x.QRStyle = qrStyle.String
+	}
+	if qrForeground.Valid {
+		x.QRForeground = qrForeground.String
+	}
+	if qrBackground.Valid {
+		x.QRBackground = qrBackground.String
+	}
+	normalizeQRStyle(&x.QRStyle, &x.QRForeground, &x.QRBackground)
 	if x.ApprovalStatus == "" {
 		x.ApprovalStatus = "pending"
 	}
@@ -1039,6 +1210,33 @@ func scanMagic(scanner interface{ Scan(dest ...any) error }) (*model.MagicLoginT
 	return &m, nil
 }
 
+func normalizeQRStyle(style, foreground, background *string) {
+	*style = strings.ToLower(strings.TrimSpace(*style))
+	switch *style {
+	case "rounded", "dots", "classic":
+	default:
+		*style = "rounded"
+	}
+	*foreground = normalizeHexColor(*foreground, "#111827")
+	*background = normalizeHexColor(*background, "#ffffff")
+}
+
+func normalizeHexColor(v, fallback string) string {
+	v = strings.TrimSpace(v)
+	if len(v) == 4 && strings.HasPrefix(v, "#") {
+		return "#" + strings.Repeat(v[1:2], 2) + strings.Repeat(v[2:3], 2) + strings.Repeat(v[3:4], 2)
+	}
+	if len(v) != 7 || !strings.HasPrefix(v, "#") {
+		return fallback
+	}
+	for _, r := range v[1:] {
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+			return fallback
+		}
+	}
+	return strings.ToLower(v)
+}
+
 func validateReviewStatus(status string) error {
 	if status != "approved" && status != "rejected" && status != "pending" {
 		return fmt.Errorf("审核状态只支持 pending/approved/rejected")
@@ -1047,11 +1245,11 @@ func validateReviewStatus(status string) error {
 }
 
 func shortLinkConfigEqual(a *model.ShortLink, b *model.ShortLink) bool {
-	return a.Code == b.Code && a.Title == b.Title && a.TargetURL == b.TargetURL && a.Status == b.Status && a.RedirectType == b.RedirectType && sameTimePtr(a.StartsAt, b.StartsAt) && sameTimePtr(a.ExpiresAt, b.ExpiresAt) && a.MaxVisits == b.MaxVisits && a.FallbackURL == b.FallbackURL && a.Remark == b.Remark
+	return a.Code == b.Code && a.Title == b.Title && a.TargetURL == b.TargetURL && a.Status == b.Status && a.RedirectType == b.RedirectType && sameTimePtr(a.StartsAt, b.StartsAt) && sameTimePtr(a.ExpiresAt, b.ExpiresAt) && a.MaxVisits == b.MaxVisits && a.FallbackURL == b.FallbackURL && a.Remark == b.Remark && a.QRStyle == b.QRStyle && a.QRForeground == b.QRForeground && a.QRBackground == b.QRBackground
 }
 
 func liveQRConfigEqual(a *model.LiveQR, b *model.LiveQR) bool {
-	return a.Code == b.Code && a.Title == b.Title && a.Description == b.Description && a.Status == b.Status && a.RotationStrategy == b.RotationStrategy && a.GuideTitle == b.GuideTitle && a.GuideText == b.GuideText && a.FallbackURL == b.FallbackURL
+	return a.Code == b.Code && a.Title == b.Title && a.Description == b.Description && a.Status == b.Status && a.RotationStrategy == b.RotationStrategy && a.GuideTitle == b.GuideTitle && a.GuideText == b.GuideText && a.FallbackURL == b.FallbackURL && a.QRStyle == b.QRStyle && a.QRForeground == b.QRForeground && a.QRBackground == b.QRBackground
 }
 
 func liveQRItemConfigEqual(a *model.LiveQRItem, b *model.LiveQRItem) bool {
