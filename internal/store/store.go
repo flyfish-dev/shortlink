@@ -376,7 +376,7 @@ func (s *Store) OverviewForAccount(ctx context.Context, accountID int64, isAdmin
 
 func (s *Store) CreateShortLink(ctx context.Context, in *model.ShortLink) (*model.ShortLink, error) {
 	normalizeShortLink(in)
-	res, err := s.db.ExecContext(ctx, `INSERT INTO short_links(owner_account_id,code,title,target_url,status,approval_status,redirect_type,starts_at,expires_at,max_visits,fallback_url,remark,qr_style,qr_foreground,qr_background) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, in.TargetURL, in.Status, "pending", in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground)
+	res, err := s.db.ExecContext(ctx, `INSERT INTO short_links(owner_account_id,code,title,target_url,status,approval_status,redirect_type,starts_at,expires_at,max_visits,fallback_url,remark,qr_style,qr_foreground,qr_background,qr_logo_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, in.TargetURL, in.Status, "pending", in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL))
 	if err != nil {
 		return nil, err
 	}
@@ -392,9 +392,9 @@ func (s *Store) UpdateShortLink(ctx context.Context, id int64, in *model.ShortLi
 	}
 	var res sql.Result
 	if shortLinkConfigEqual(current, in) {
-		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
+		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, qr_style=?, qr_foreground=?, qr_background=?, qr_logo_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL), now(), id)
 	} else {
-		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
+		res, err = s.db.ExecContext(ctx, `UPDATE short_links SET code=?, title=?, target_url=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, redirect_type=?, starts_at=?, expires_at=?, max_visits=?, fallback_url=?, remark=?, qr_style=?, qr_foreground=?, qr_background=?, qr_logo_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, in.TargetURL, in.Status, in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL), now(), id)
 	}
 	if err != nil {
 		return nil, err
@@ -413,6 +413,7 @@ func normalizeShortLink(in *model.ShortLink) {
 		in.Status = "active"
 	}
 	normalizeQRStyle(&in.QRStyle, &in.QRForeground, &in.QRBackground)
+	in.QRLogoURL = strings.TrimSpace(in.QRLogoURL)
 }
 
 func (s *Store) ReviewShortLink(ctx context.Context, id int64, status, note string) (*model.ShortLink, error) {
@@ -502,15 +503,15 @@ func (s *Store) IncrementShortVisit(ctx context.Context, id int64) error {
 }
 
 func shortSelectSQL() string {
-	return `SELECT id, owner_account_id, code, title, target_url, status, approval_status, approved_at, reviewed_at, review_note, redirect_type, starts_at, expires_at, max_visits, visit_count, fallback_url, remark, qr_style, qr_foreground, qr_background, created_at, updated_at FROM short_links`
+	return `SELECT id, owner_account_id, code, title, target_url, status, approval_status, approved_at, reviewed_at, review_note, redirect_type, starts_at, expires_at, max_visits, visit_count, fallback_url, remark, qr_style, qr_foreground, qr_background, qr_logo_url, created_at, updated_at FROM short_links`
 }
 
 func scanShort(scanner interface{ Scan(dest ...any) error }) (*model.ShortLink, error) {
 	var x model.ShortLink
 	var starts, expires, approved, reviewed sql.NullTime
 	var owner sql.NullInt64
-	var fallback, remark, note, qrStyle, qrForeground, qrBackground sql.NullString
-	if err := scanner.Scan(&x.ID, &owner, &x.Code, &x.Title, &x.TargetURL, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RedirectType, &starts, &expires, &x.MaxVisits, &x.VisitCount, &fallback, &remark, &qrStyle, &qrForeground, &qrBackground, &x.CreatedAt, &x.UpdatedAt); err != nil {
+	var fallback, remark, note, qrStyle, qrForeground, qrBackground, qrLogoURL sql.NullString
+	if err := scanner.Scan(&x.ID, &owner, &x.Code, &x.Title, &x.TargetURL, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RedirectType, &starts, &expires, &x.MaxVisits, &x.VisitCount, &fallback, &remark, &qrStyle, &qrForeground, &qrBackground, &qrLogoURL, &x.CreatedAt, &x.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -527,6 +528,9 @@ func scanShort(scanner interface{ Scan(dest ...any) error }) (*model.ShortLink, 
 	}
 	if qrBackground.Valid {
 		x.QRBackground = qrBackground.String
+	}
+	if qrLogoURL.Valid {
+		x.QRLogoURL = strings.TrimSpace(qrLogoURL.String)
 	}
 	normalizeQRStyle(&x.QRStyle, &x.QRForeground, &x.QRBackground)
 	if x.ApprovalStatus == "" {
@@ -558,7 +562,7 @@ func scanShort(scanner interface{ Scan(dest ...any) error }) (*model.ShortLink, 
 
 func (s *Store) CreateLiveQR(ctx context.Context, in *model.LiveQR) (*model.LiveQR, error) {
 	normalizeLiveQR(in)
-	res, err := s.db.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground)
+	res, err := s.db.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background,qr_logo_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL))
 	if err != nil {
 		return nil, err
 	}
@@ -568,7 +572,7 @@ func (s *Store) CreateLiveQR(ctx context.Context, in *model.LiveQR) (*model.Live
 
 func (s *Store) UpdateLiveQR(ctx context.Context, id int64, in *model.LiveQR) (*model.LiveQR, error) {
 	normalizeLiveQR(in)
-	res, err := s.db.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
+	res, err := s.db.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, qr_logo_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL), now(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -586,7 +590,7 @@ func (s *Store) SaveLiveQRBundle(ctx context.Context, id int64, in *model.LiveQR
 	}
 	defer func() { _ = tx.Rollback() }()
 	if id == 0 {
-		res, err := tx.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground)
+		res, err := tx.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background,qr_logo_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL))
 		if err != nil {
 			return nil, err
 		}
@@ -598,9 +602,9 @@ func (s *Store) SaveLiveQRBundle(ctx context.Context, id int64, in *model.LiveQR
 		}
 		var res sql.Result
 		if liveQRConfigEqual(current, in) {
-			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
+			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, qr_logo_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL), now(), id)
 		} else {
-			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, now(), id)
+			res, err = tx.ExecContext(ctx, `UPDATE live_qrs SET code=?, title=?, description=?, status=?, approval_status='pending', approved_at=NULL, reviewed_at=NULL, review_note=NULL, rotation_strategy=?, guide_title=?, guide_text=?, fallback_url=?, qr_style=?, qr_foreground=?, qr_background=?, qr_logo_url=?, updated_at=? WHERE id=?`, in.Code, in.Title, nullString(in.Description), in.Status, in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL), now(), id)
 		}
 		if err != nil {
 			return nil, err
@@ -669,6 +673,7 @@ func normalizeLiveQR(in *model.LiveQR) {
 		in.GuideText = "请长按下方二维码图片，选择“识别图中二维码”完成添加或访问。"
 	}
 	normalizeQRStyle(&in.QRStyle, &in.QRForeground, &in.QRBackground)
+	in.QRLogoURL = strings.TrimSpace(in.QRLogoURL)
 }
 
 func (s *Store) ReviewLiveQR(ctx context.Context, id int64, status, note string, includeItems bool) (*model.LiveQR, error) {
@@ -766,15 +771,15 @@ func (s *Store) ListLiveQRsForAccount(ctx context.Context, q string, limit, offs
 }
 
 func liveSelectSQL() string {
-	return `SELECT id, owner_account_id, code, title, description, status, approval_status, approved_at, reviewed_at, review_note, rotation_strategy, current_cursor, visit_count, guide_title, guide_text, fallback_url, qr_style, qr_foreground, qr_background, created_at, updated_at FROM live_qrs`
+	return `SELECT id, owner_account_id, code, title, description, status, approval_status, approved_at, reviewed_at, review_note, rotation_strategy, current_cursor, visit_count, guide_title, guide_text, fallback_url, qr_style, qr_foreground, qr_background, qr_logo_url, created_at, updated_at FROM live_qrs`
 }
 
 func scanLive(scanner interface{ Scan(dest ...any) error }) (*model.LiveQR, error) {
 	var x model.LiveQR
-	var description, fallback, note, qrStyle, qrForeground, qrBackground sql.NullString
+	var description, fallback, note, qrStyle, qrForeground, qrBackground, qrLogoURL sql.NullString
 	var owner sql.NullInt64
 	var approved, reviewed sql.NullTime
-	if err := scanner.Scan(&x.ID, &owner, &x.Code, &x.Title, &description, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RotationStrategy, &x.CurrentCursor, &x.VisitCount, &x.GuideTitle, &x.GuideText, &fallback, &qrStyle, &qrForeground, &qrBackground, &x.CreatedAt, &x.UpdatedAt); err != nil {
+	if err := scanner.Scan(&x.ID, &owner, &x.Code, &x.Title, &description, &x.Status, &x.ApprovalStatus, &approved, &reviewed, &note, &x.RotationStrategy, &x.CurrentCursor, &x.VisitCount, &x.GuideTitle, &x.GuideText, &fallback, &qrStyle, &qrForeground, &qrBackground, &qrLogoURL, &x.CreatedAt, &x.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -806,6 +811,9 @@ func scanLive(scanner interface{ Scan(dest ...any) error }) (*model.LiveQR, erro
 	}
 	if qrBackground.Valid {
 		x.QRBackground = qrBackground.String
+	}
+	if qrLogoURL.Valid {
+		x.QRLogoURL = strings.TrimSpace(qrLogoURL.String)
 	}
 	normalizeQRStyle(&x.QRStyle, &x.QRForeground, &x.QRBackground)
 	if x.ApprovalStatus == "" {
@@ -1245,11 +1253,11 @@ func validateReviewStatus(status string) error {
 }
 
 func shortLinkConfigEqual(a *model.ShortLink, b *model.ShortLink) bool {
-	return a.Code == b.Code && a.Title == b.Title && a.TargetURL == b.TargetURL && a.Status == b.Status && a.RedirectType == b.RedirectType && sameTimePtr(a.StartsAt, b.StartsAt) && sameTimePtr(a.ExpiresAt, b.ExpiresAt) && a.MaxVisits == b.MaxVisits && a.FallbackURL == b.FallbackURL && a.Remark == b.Remark && a.QRStyle == b.QRStyle && a.QRForeground == b.QRForeground && a.QRBackground == b.QRBackground
+	return a.Code == b.Code && a.Title == b.Title && a.TargetURL == b.TargetURL && a.Status == b.Status && a.RedirectType == b.RedirectType && sameTimePtr(a.StartsAt, b.StartsAt) && sameTimePtr(a.ExpiresAt, b.ExpiresAt) && a.MaxVisits == b.MaxVisits && a.FallbackURL == b.FallbackURL && a.Remark == b.Remark && a.QRStyle == b.QRStyle && a.QRForeground == b.QRForeground && a.QRBackground == b.QRBackground && a.QRLogoURL == b.QRLogoURL
 }
 
 func liveQRConfigEqual(a *model.LiveQR, b *model.LiveQR) bool {
-	return a.Code == b.Code && a.Title == b.Title && a.Description == b.Description && a.Status == b.Status && a.RotationStrategy == b.RotationStrategy && a.GuideTitle == b.GuideTitle && a.GuideText == b.GuideText && a.FallbackURL == b.FallbackURL && a.QRStyle == b.QRStyle && a.QRForeground == b.QRForeground && a.QRBackground == b.QRBackground
+	return a.Code == b.Code && a.Title == b.Title && a.Description == b.Description && a.Status == b.Status && a.RotationStrategy == b.RotationStrategy && a.GuideTitle == b.GuideTitle && a.GuideText == b.GuideText && a.FallbackURL == b.FallbackURL && a.QRStyle == b.QRStyle && a.QRForeground == b.QRForeground && a.QRBackground == b.QRBackground && a.QRLogoURL == b.QRLogoURL
 }
 
 func liveQRItemConfigEqual(a *model.LiveQRItem, b *model.LiveQRItem) bool {

@@ -18,12 +18,14 @@
           body.qr_style = val('slQRStyle') || 'rounded';
           body.qr_foreground = val('slQRForeground') || '#111827';
           body.qr_background = val('slQRBackground') || '#ffffff';
+          body.qr_logo_url = val('slQRLogoURL') || '';
         }
         if ((String(url).includes('/live-qrs')) && $('#lQRStyle')) {
           const target = body.live || body;
           target.qr_style = val('lQRStyle') || 'rounded';
           target.qr_foreground = val('lQRForeground') || '#111827';
           target.qr_background = val('lQRBackground') || '#ffffff';
+          target.qr_logo_url = val('lQRLogoURL') || '';
         }
         init = { ...init, body: JSON.stringify(body) };
       }

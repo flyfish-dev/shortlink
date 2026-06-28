@@ -23,6 +23,7 @@ type ShortLink struct {
 	QRStyle        string     `json:"qr_style"`
 	QRForeground   string     `json:"qr_foreground"`
 	QRBackground   string     `json:"qr_background"`
+	QRLogoURL      string     `json:"qr_logo_url"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
@@ -47,6 +48,7 @@ type LiveQR struct {
 	QRStyle          string       `json:"qr_style"`
 	QRForeground     string       `json:"qr_foreground"`
 	QRBackground     string       `json:"qr_background"`
+	QRLogoURL        string       `json:"qr_logo_url"`
 	CreatedAt        time.Time    `json:"created_at"`
 	UpdatedAt        time.Time    `json:"updated_at"`
 	Items            []LiveQRItem `json:"items,omitempty"`

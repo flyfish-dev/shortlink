@@ -40,6 +40,7 @@ const num = (id) => Number(document.getElementById(id)?.value || 0);
 const checked = (id) => !!document.getElementById(id)?.checked;
 const localeCode = () => state.locale === 'zh' ? 'zh-CN' : 'en-US';
 const t = (key, fallback = '') => I18N[state.locale]?.[key] || I18N.zh[key] || fallback || key;
+const tx = (zh, en) => state.locale === 'zh' ? zh : en;
 const fmtDate = (s) => s ? new Date(s).toLocaleString(localeCode(), { hour12: false }) : '-';
 const themeToggleHTML = '<span class="theme-option theme-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="theme-icon-fill" cx="12" cy="12" r="4.4"/><path class="theme-icon-accent" d="M12 2.9v2.2M12 18.9v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.9 12h2.2M18.9 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg></span><span class="theme-option theme-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="theme-icon-fill" d="M19.3 14.4A7.4 7.4 0 0 1 9.6 4.7 8.2 8.2 0 1 0 19.3 14.4Z"/><path class="theme-icon-accent" d="M16.8 3.7l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/></svg></span>';
 const fmtInputDate = (s) => {
@@ -139,6 +140,108 @@ const copy = async (text) => {
 };
 const publicShort = code => `${baseURL}/s/${code}`;
 const publicLive = code => `${baseURL}/q/${code}`;
+const qrPath = (kind, code, format = 'svg') => `/qr/${kind}/${encodeURIComponent(code)}.${format}`;
+const qrPreviewPath = (content, cfg = {}) => {
+  const q = new URLSearchParams({
+    content,
+    style: cfg.qr_style || 'rounded',
+    foreground: cfg.qr_foreground || '#111827',
+    background: cfg.qr_background || '#ffffff',
+  });
+  if (cfg.qr_logo_url) q.set('logo_url', cfg.qr_logo_url);
+  return `/api/admin/qr-preview?${q.toString()}`;
+};
+function qrConfigFrom(prefix) {
+  return {
+    qr_style: val(`${prefix}QRStyle`) || 'rounded',
+    qr_foreground: val(`${prefix}QRForeground`) || '#111827',
+    qr_background: val(`${prefix}QRBackground`) || '#ffffff',
+    qr_logo_url: val(`${prefix}QRLogoURL`),
+  };
+}
+function qrDesignerHTML(prefix, cfg = {}, content = '') {
+  const style = cfg.qr_style || 'rounded';
+  const fg = cfg.qr_foreground || '#111827';
+  const bg = cfg.qr_background || '#ffffff';
+  const logo = cfg.qr_logo_url || '';
+  const preview = qrPreviewPath(content || `${baseURL}/q/preview`, { qr_style: style, qr_foreground: fg, qr_background: bg, qr_logo_url: logo });
+  return `<div class="qr-designer">
+    <div class="section-title"><h3>${tx('入口二维码定制','Entry QR design')}</h3><p class="muted">${tx('统一设置活码入口的视觉风格、品牌色和中心贴图。','Control the public entry QR style, brand colors and center mark.')}</p></div>
+    <div class="qr-designer-grid">
+      <div class="qr-designer-controls">
+        <label class="field"><span>${tx('样式','Style')}</span><select id="${prefix}QRStyle"><option value="rounded">${tx('圆角模块','Rounded modules')}</option><option value="dots">${tx('圆点模块','Dot modules')}</option><option value="classic">${tx('经典方块','Classic blocks')}</option></select></label>
+        <div class="mini-grid">
+          <label class="field"><span>${tx('前景色','Foreground')}</span><input id="${prefix}QRForeground" type="color" value="${esc(fg)}"></label>
+          <label class="field"><span>${tx('背景色','Background')}</span><input id="${prefix}QRBackground" type="color" value="${esc(bg)}"></label>
+        </div>
+        <label class="field"><span>${tx('中心贴图','Center mark')}</span><input id="${prefix}QRLogoURL" value="${esc(logo)}" placeholder="/uploads/brand.png"></label>
+        <label class="field file-field"><span>${tx('上传贴图','Upload mark')}</span><input id="${prefix}QRLogoFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+      </div>
+      <div class="qr-preview-panel">
+        <img id="${prefix}QRPreview" src="${esc(preview)}" alt="${tx('二维码风格预览','QR style preview')}" loading="lazy">
+        <div class="qr-preview-meta"><span id="${prefix}QRMeta">${esc(style)} · ${esc(fg)} / ${esc(bg)}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+function bindQRDesigner(prefix, contentGetter) {
+  const sync = () => updateQRPreview(prefix, contentGetter());
+  [`${prefix}QRStyle`, `${prefix}QRForeground`, `${prefix}QRBackground`, `${prefix}QRLogoURL`].forEach(id => document.getElementById(id)?.addEventListener('input', sync));
+  document.getElementById(`${prefix}QRLogoFile`)?.addEventListener('change', e => uploadImageInto(e, `${prefix}QRLogoURL`, sync));
+  sync();
+}
+function updateQRPreview(prefix, content) {
+  const img = document.getElementById(`${prefix}QRPreview`);
+  if (!img) return;
+  const cfg = qrConfigFrom(prefix);
+  img.src = qrPreviewPath(content || `${baseURL}/q/preview`, cfg);
+  const meta = document.getElementById(`${prefix}QRMeta`);
+  if (meta) meta.textContent = `${cfg.qr_style} · ${cfg.qr_foreground} / ${cfg.qr_background}${cfg.qr_logo_url ? ' · logo' : ''}`;
+}
+function qrDownloadButtonsHTML(kind, code, compact = false) {
+  if (!code) return '';
+  const label = compact ? '' : `<span>${tx('下载','Download')}</span>`;
+  return `<div class="download-group" data-qr-downloads="${esc(kind)}:${esc(code)}">${label}<a class="button ghost" download href="${qrPath(kind, code, 'svg')}">SVG</a><a class="button ghost" download href="${qrPath(kind, code, 'png')}">PNG</a><button class="ghost" type="button" data-webp-qr="${esc(kind)}:${esc(code)}">WEBP</button></div>`;
+}
+function bindQRDownloadButtons(root = document) {
+  root.querySelectorAll('[data-webp-qr]').forEach(btn => {
+    btn.onclick = () => {
+      const [kind, code] = btn.dataset.webpQr.split(':');
+      downloadQRWebP(kind, code);
+    };
+  });
+}
+async function downloadQRWebP(kind, code) {
+  try {
+    const pngBlob = await fetch(qrPath(kind, code, 'png'), { credentials: 'same-origin' }).then(r => {
+      if (!r.ok) throw new Error('QR PNG unavailable');
+      return r.blob();
+    });
+    const url = URL.createObjectURL(pngBlob);
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || 1024;
+      canvas.height = img.naturalHeight || 1024;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(out => {
+        URL.revokeObjectURL(url);
+        if (!out) return toast(tx('当前浏览器不支持导出 WEBP','This browser cannot export WEBP'));
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(out);
+        a.download = `${code}.webp`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }, 'image/webp', .96);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); toast(tx('WEBP 生成失败','WEBP export failed')); };
+    img.src = url;
+  } catch (err) {
+    toast(err.message || tx('WEBP 生成失败','WEBP export failed'));
+  }
+}
 const localizedAppName = (settings = state.me?.settings || {}) => {
   if (state.locale === 'en') return settings.app_name_en || settings.app_name || 'AI Shortlink';
   return settings.app_name_zh || settings.app_name || 'AI短链平台';
@@ -324,10 +427,11 @@ function bindReviewButtons() {
 async function renderShorts() {
   setHeader(t('page.shorts'), t('page.shortsDesc'), t('btn.newShort'), true);
   const { data } = await api('/api/admin/short-links?limit=100&q=' + encodeURIComponent(state.q || ''));
-  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('short.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card"><table><thead><tr><th>${t('short.title')}</th><th>${t('short.code')}</th><th>${t('short.target')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(row => `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicShort(row.code))}</div></td><td><div class="copy" title="${esc(row.target_url)}">${esc(row.target_url)}</div></td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td><div class="actions"><button class="ghost" data-copy="${esc(publicShort(row.code))}">${t('common.copy')}</button><button class="ghost" data-edit-short="${row.id}">${t('common.edit')}</button><button class="ghost" data-stats-short="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button><a class="button ghost" target="_blank" href="/qr/short/${esc(row.code)}.png">${t('short.qr')}</a>${reviewButtons('short', row.id, row.approval_status)}<button class="danger" data-del-short="${row.id}">${t('common.delete')}</button></div></td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">${t('short.empty')}</div></td></tr>`}</tbody></table></div>`;
+  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('short.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card"><table><thead><tr><th>${t('short.title')}</th><th>${t('short.code')}</th><th>${t('short.target')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(row => `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicShort(row.code))}</div></td><td><div class="copy" title="${esc(row.target_url)}">${esc(row.target_url)}</div></td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td><div class="actions"><button class="ghost" data-copy="${esc(publicShort(row.code))}">${t('common.copy')}</button><button class="ghost" data-edit-short="${row.id}">${t('common.edit')}</button><button class="ghost" data-stats-short="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button>${qrDownloadButtonsHTML('short', row.code, true)}${reviewButtons('short', row.id, row.approval_status)}<button class="danger" data-del-short="${row.id}">${t('common.delete')}</button></div></td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">${t('short.empty')}</div></td></tr>`}</tbody></table></div>`;
   document.getElementById('searchBtn').onclick = () => { state.q = val('q'); renderShorts(); };
   document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { state.q = val('q'); renderShorts(); } });
   bindShortActions(data);
+  bindQRDownloadButtons(content);
 }
 function bindShortActions(rows) {
   document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
@@ -341,16 +445,20 @@ function bindShortActions(rows) {
   bindReviewButtons();
 }
 function openShortModal(row = null) {
-  openModal(row ? t('short.modalEdit') : t('short.modalNew'), `<div class="form-grid"><label class="field"><span>${t('short.title')}</span><input id="slTitle" value="${esc(row?.title || '')}" placeholder="618 landing"></label><label class="field"><span>${t('short.customCode')}</span><input id="slCode" value="${esc(row?.code || '')}" placeholder="${state.locale === 'zh' ? '留空自动生成' : 'Auto generated if empty'}"></label><label class="field wide"><span>${t('short.targetURL')}</span><input id="slTarget" value="${esc(row?.target_url || '')}" placeholder="https://example.com/landing"></label><label class="field"><span>${t('common.status')}</span><select id="slStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('short.redirect')}</span><select id="slRedirect"><option value="302">302</option><option value="301">301</option><option value="307">307</option><option value="308">308</option></select></label><label class="field"><span>${t('short.starts')}</span><input id="slStarts" type="datetime-local" value="${fmtInputDate(row?.starts_at)}"></label><label class="field"><span>${t('short.expires')}</span><input id="slExpires" type="datetime-local" value="${fmtInputDate(row?.expires_at)}"></label><label class="field"><span>${t('short.max')}</span><input id="slMax" type="number" min="0" value="${row?.max_visits || 0}"></label><label class="field"><span>${t('short.fallback')}</span><input id="slFallback" value="${esc(row?.fallback_url || '')}" placeholder="https://..."></label><label class="field wide"><span>${t('short.remark')}</span><textarea id="slRemark">${esc(row?.remark || '')}</textarea></label><p class="muted wide">${t('short.pendingTip')}</p></div><div class="form-actions"><button class="ghost" data-close="1">${t('common.cancel')}</button><button class="primary" id="saveShort">${t('common.save')}</button></div>`);
+  const previewContent = () => val('slCode') ? publicShort(val('slCode')) : (val('slTarget') || `${baseURL}/s/preview`);
+  openModal(row ? t('short.modalEdit') : t('short.modalNew'), `<div class="form-grid"><label class="field"><span>${t('short.title')}</span><input id="slTitle" value="${esc(row?.title || '')}" placeholder="618 landing"></label><label class="field"><span>${t('short.customCode')}</span><input id="slCode" value="${esc(row?.code || '')}" placeholder="${state.locale === 'zh' ? '留空自动生成' : 'Auto generated if empty'}"></label><label class="field wide"><span>${t('short.targetURL')}</span><input id="slTarget" value="${esc(row?.target_url || '')}" placeholder="https://example.com/landing"></label><label class="field"><span>${t('common.status')}</span><select id="slStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('short.redirect')}</span><select id="slRedirect"><option value="302">302</option><option value="301">301</option><option value="307">307</option><option value="308">308</option></select></label><label class="field"><span>${t('short.starts')}</span><input id="slStarts" type="datetime-local" value="${fmtInputDate(row?.starts_at)}"></label><label class="field"><span>${t('short.expires')}</span><input id="slExpires" type="datetime-local" value="${fmtInputDate(row?.expires_at)}"></label><label class="field"><span>${t('short.max')}</span><input id="slMax" type="number" min="0" value="${row?.max_visits || 0}"></label><label class="field"><span>${t('short.fallback')}</span><input id="slFallback" value="${esc(row?.fallback_url || '')}" placeholder="https://..."></label><label class="field wide"><span>${t('short.remark')}</span><textarea id="slRemark">${esc(row?.remark || '')}</textarea></label><div class="wide">${qrDesignerHTML('sl', row || {}, previewContent())}</div><p class="muted wide">${t('short.pendingTip')}</p></div><div class="form-actions"><button class="ghost" data-close="1">${t('common.cancel')}</button><button class="primary" id="saveShort">${t('common.save')}</button></div>`);
   document.getElementById('slStatus').value = row?.status || 'active';
   document.getElementById('slRedirect').value = String(row?.redirect_type || 302);
+  document.getElementById('slQRStyle').value = row?.qr_style || 'rounded';
+  ['slCode','slTarget'].forEach(id => document.getElementById(id)?.addEventListener('input', () => updateQRPreview('sl', previewContent())));
+  bindQRDesigner('sl', previewContent);
   document.getElementById('saveShort').onclick = () => submitShort(row?.id);
 }
 async function submitShort(id) {
   const starts = val('slStarts'), expires = val('slExpires');
   if (starts && expires && new Date(starts) >= new Date(expires)) return toast(state.locale === 'zh' ? '过期时间必须晚于开始时间' : 'Expiry must be later than start time');
   if (num('slMax') < 0) return toast(state.locale === 'zh' ? '访问上限不能为负数' : 'Visit limit cannot be negative');
-  const payload = { title: val('slTitle'), code: val('slCode'), target_url: val('slTarget'), status: val('slStatus'), redirect_type: num('slRedirect'), starts_at: starts, expires_at: expires, max_visits: num('slMax'), fallback_url: val('slFallback'), remark: val('slRemark') };
+  const payload = { title: val('slTitle'), code: val('slCode'), target_url: val('slTarget'), status: val('slStatus'), redirect_type: num('slRedirect'), starts_at: starts, expires_at: expires, max_visits: num('slMax'), fallback_url: val('slFallback'), remark: val('slRemark'), ...qrConfigFrom('sl') };
   const path = id ? `/api/admin/short-links/${id}` : '/api/admin/short-links';
   await api(path, { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
   closeModal(); toast(t('msg.saved')); renderShorts();
@@ -359,10 +467,11 @@ async function submitShort(id) {
 async function renderLives() {
   setHeader(t('page.lives'), t('page.livesDesc'), t('btn.newLive'), true);
   const { data } = await api('/api/admin/live-qrs?limit=100&q=' + encodeURIComponent(state.q || ''));
-  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('live.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card"><table><thead><tr><th>${t('live.title')}</th><th>${t('live.link')}</th><th>${t('live.strategy')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(row => `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicLive(row.code))}</div></td><td>${strategyName(row.rotation_strategy)}</td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td><div class="actions"><button class="ghost" data-copy="${esc(publicLive(row.code))}">${t('common.copy')}</button><button class="ghost" data-edit-live="${row.id}">${t('common.config')}</button><button class="ghost" data-stats-live="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button><a class="button ghost" target="_blank" href="/qr/live/${esc(row.code)}.png">${t('live.qr')}</a>${reviewButtons('live', row.id, row.approval_status, true)}<button class="danger" data-del-live="${row.id}">${t('common.delete')}</button></div></td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">${t('live.empty')}</div></td></tr>`}</tbody></table></div>`;
+  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('live.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card"><table><thead><tr><th>${t('live.title')}</th><th>${t('live.link')}</th><th>${t('live.strategy')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(row => `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicLive(row.code))}</div></td><td>${strategyName(row.rotation_strategy)}</td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td><div class="actions"><button class="ghost" data-copy="${esc(publicLive(row.code))}">${t('common.copy')}</button><button class="ghost" data-edit-live="${row.id}">${t('common.config')}</button><button class="ghost" data-stats-live="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button>${qrDownloadButtonsHTML('live', row.code, true)}${reviewButtons('live', row.id, row.approval_status, true)}<button class="danger" data-del-live="${row.id}">${t('common.delete')}</button></div></td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">${t('live.empty')}</div></td></tr>`}</tbody></table></div>`;
   document.getElementById('searchBtn').onclick = () => { state.q = val('q'); renderLives(); };
   document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { state.q = val('q'); renderLives(); } });
   bindLiveActions(data);
+  bindQRDownloadButtons(content);
 }
 function strategyName(s) { return t('strategy.' + (s || 'round_robin'), s); }
 function bindLiveActions(rows) {
@@ -378,7 +487,7 @@ function bindLiveActions(rows) {
 }
 
 function defaultLiveData() {
-  return { id: null, title: '', code: '', status: 'active', approval_status: 'pending', rotation_strategy: 'round_robin', description: '', guide_title: state.locale === 'zh' ? '长按识别二维码' : 'Long press to scan QR', guide_text: state.locale === 'zh' ? '请长按下方二维码图片，选择“识别图中二维码”完成添加或访问。' : 'Long press the QR image below and choose scan or recognize QR.', fallback_url: '', items: [] };
+  return { id: null, title: '', code: '', status: 'active', approval_status: 'pending', rotation_strategy: 'round_robin', description: '', guide_title: state.locale === 'zh' ? '长按识别二维码' : 'Long press to scan QR', guide_text: state.locale === 'zh' ? '请长按下方二维码图片，选择“识别图中二维码”完成添加或访问。' : 'Long press the QR image below and choose scan or recognize QR.', fallback_url: '', qr_style: 'rounded', qr_foreground: '#111827', qr_background: '#ffffff', qr_logo_url: '', items: [] };
 }
 function normalizeEditorItem(it = {}) {
   return { id: it.id || null, title: it.title || '', qr_image_url: it.qr_image_url || '', target_url: it.target_url || '', status: it.status || 'active', approval_status: it.approval_status || 'pending', review_note: it.review_note || '', starts_at: fmtInputDate(it.starts_at), expires_at: fmtInputDate(it.expires_at), max_views: Number(it.max_views || 0), view_count: Number(it.view_count || 0), sort_order: Number(it.sort_order || 100), weight: Number(it.weight || 1) };
@@ -393,14 +502,53 @@ async function openLiveEditor(row = null) {
   openModal(data.id ? `${t('live.modalEdit')} · ${data.title || data.code}` : t('live.modalNew'), liveEditorHTML(data), 'live-editor-modal');
   document.getElementById('lStatus').value = data.status || 'active';
   document.getElementById('lStrategy').value = data.rotation_strategy || 'round_robin';
+  document.getElementById('lQRStyle').value = data.qr_style || 'rounded';
   bindLiveEditor();
   renderLiveEditorItems();
   updateLiveLinkBlocks();
+  updateLivePoolSummary();
   updateLivePublishSummary();
 }
 function liveEditorHTML(data) {
   const link = data.code ? publicLive(data.code) : '';
-  return `<div class="live-editor"><div class="tabs"><button class="tab active" data-live-tab="base">${t('live.base')}</button><button class="tab" data-live-tab="items">${t('live.items')}</button><button class="tab" data-live-tab="publish">${t('live.publish')}</button></div><section class="tab-panel" id="liveTab-base"><div class="form-grid editor-grid"><label class="field"><span>${t('live.title')}</span><input id="lTitle" value="${esc(data.title || '')}" placeholder="WeChat group live QR"></label><label class="field"><span>${t('short.customCode')}</span><input id="lCode" value="${esc(data.code || '')}" placeholder="${state.locale === 'zh' ? '留空自动生成' : 'Auto generated if empty'}"></label><label class="field"><span>${t('common.status')}</span><select id="lStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('live.strategy')}</span><select id="lStrategy"><option value="round_robin">${t('strategy.round_robin')}</option><option value="random">${t('strategy.random')}</option><option value="least_used">${t('strategy.least_used')}</option></select></label><label class="field wide"><span>${t('live.description')}</span><textarea id="lDesc">${esc(data.description || '')}</textarea></label><label class="field"><span>${t('live.guideTitle')}</span><input id="lGuideTitle" value="${esc(data.guide_title || defaultLiveData().guide_title)}"></label><label class="field"><span>${t('live.fallback')}</span><input id="lFallback" value="${esc(data.fallback_url || '')}" placeholder="https://..."></label><label class="field wide"><span>${t('live.guideText')}</span><textarea id="lGuideText">${esc(data.guide_text || defaultLiveData().guide_text)}</textarea></label></div></section><section class="tab-panel" id="liveTab-items" hidden><div class="live-link-box" id="liveLinkBox">${link ? linkBoxHTML(link, data.code) : unsavedLinkHTML()}</div><div class="editor-split"><div class="card item-form-card"><div class="section-title"><h3>${t('live.itemConfig')}</h3><p class="muted">${t('live.itemHint')}</p></div><input type="hidden" id="itIndex"><label class="field"><span>${t('live.itemTitle')}</span><input id="itTitle" placeholder="Group 1 / Support A"></label><label class="field"><span>${t('live.itemImage')}</span><input id="itImage" placeholder="/uploads/... / https://..."></label><label class="field"><span>${t('live.upload')}</span><input id="itFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label><label class="field"><span>${t('live.itemTarget')}</span><input id="itTarget" placeholder="https://..."></label><div class="mini-grid"><label class="field"><span>${t('common.status')}</span><select id="itStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('live.sort')}</span><input id="itSort" type="number" value="100"></label><label class="field"><span>${t('short.starts')}</span><input id="itStarts" type="datetime-local"></label><label class="field"><span>${t('short.expires')}</span><input id="itExpires" type="datetime-local"></label><label class="field"><span>${t('live.maxViews')}</span><input id="itMax" type="number" min="0" value="0"></label><label class="field"><span>${t('live.weight')}</span><input id="itWeight" type="number" min="1" value="1"></label></div><div class="actions item-form-actions"><button class="ghost" id="resetItem">${t('live.clear')}</button><button class="primary" id="saveDraftItem">${t('live.addItem')}</button></div></div><div class="card table-card item-list-card"><table><thead><tr><th>${t('live.itemImage')}</th><th>${t('live.title')}</th><th>${t('common.status')}</th><th>${t('common.review')}</th><th>${t('live.validity')}</th><th>${t('live.views')}</th><th>${t('common.actions')}</th></tr></thead><tbody id="itemsTbody"></tbody></table></div></div></section><section class="tab-panel" id="liveTab-publish" hidden><div id="livePublishSummary" class="publish-summary"></div></section></div><div class="form-actions live-editor-actions"><button class="ghost" data-close="1">${t('common.close')}</button><button class="ghost" id="saveLiveClose">${t('live.saveClose')}</button><button class="primary" id="saveLiveBundle">${t('live.saveAll')}</button></div>`;
+  const previewContent = link || `${baseURL}/q/preview`;
+  return `<div class="live-editor">
+    <div class="tabs live-tabs"><button class="tab active" data-live-tab="base">${tx('1. 基础与入口','1. Entry setup')}</button><button class="tab" data-live-tab="items">${tx('2. 二维码池','2. QR pool')}</button><button class="tab" data-live-tab="publish">${tx('3. 发布与下载','3. Publish')}</button></div>
+    <section class="tab-panel" id="liveTab-base">
+      <div class="live-base-layout">
+        <div class="card live-config-card">
+          <div class="section-title"><h3>${tx('活码配置','Live QR configuration')}</h3><p class="muted">${tx('先确定入口、轮换策略和访客看到的引导文案。','Set the public entry, rotation policy and visitor guidance first.')}</p></div>
+          <div class="form-grid editor-grid compact-form-grid"><label class="field"><span>${t('live.title')}</span><input id="lTitle" value="${esc(data.title || '')}" placeholder="WeChat group live QR"></label><label class="field"><span>${t('short.customCode')}</span><input id="lCode" value="${esc(data.code || '')}" placeholder="${state.locale === 'zh' ? '留空自动生成' : 'Auto generated if empty'}"></label><label class="field"><span>${t('common.status')}</span><select id="lStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('live.strategy')}</span><select id="lStrategy"><option value="round_robin">${t('strategy.round_robin')}</option><option value="random">${t('strategy.random')}</option><option value="least_used">${t('strategy.least_used')}</option></select></label><label class="field wide"><span>${t('live.description')}</span><textarea id="lDesc">${esc(data.description || '')}</textarea></label><label class="field"><span>${t('live.guideTitle')}</span><input id="lGuideTitle" value="${esc(data.guide_title || defaultLiveData().guide_title)}"></label><label class="field"><span>${t('live.fallback')}</span><input id="lFallback" value="${esc(data.fallback_url || '')}" placeholder="https://..."></label><label class="field wide"><span>${t('live.guideText')}</span><textarea id="lGuideText">${esc(data.guide_text || defaultLiveData().guide_text)}</textarea></label></div>
+        </div>
+        <div class="card live-entry-card">
+          <div class="live-link-box" id="liveLinkBox">${link ? linkBoxHTML(link, data.code) : unsavedLinkHTML()}</div>
+          ${qrDesignerHTML('l', data, previewContent)}
+        </div>
+      </div>
+    </section>
+    <section class="tab-panel" id="liveTab-items" hidden>
+      <div class="live-pool-summary" id="livePoolSummary"></div>
+      <div class="editor-split live-pool-layout">
+        <div class="card item-form-card">
+          <div class="section-title"><h3>${t('live.itemConfig')}</h3><p class="muted">${t('live.itemHint')}</p></div>
+          <input type="hidden" id="itIndex">
+          <div class="item-image-uploader">
+            <div class="item-image-preview" id="itImagePreview">${tx('预览','Preview')}</div>
+            <div>
+              <label class="field"><span>${t('live.itemImage')}</span><input id="itImage" placeholder="/uploads/... / https://..."></label>
+              <label class="field file-field"><span>${t('live.upload')}</span><input id="itFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+            </div>
+          </div>
+          <label class="field"><span>${t('live.itemTitle')}</span><input id="itTitle" placeholder="Group 1 / Support A"></label>
+          <label class="field"><span>${t('live.itemTarget')}</span><input id="itTarget" placeholder="https://..."></label>
+          <div class="mini-grid"><label class="field"><span>${t('common.status')}</span><select id="itStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('live.sort')}</span><input id="itSort" type="number" value="100"></label><label class="field"><span>${t('short.starts')}</span><input id="itStarts" type="datetime-local"></label><label class="field"><span>${t('short.expires')}</span><input id="itExpires" type="datetime-local"></label><label class="field"><span>${t('live.maxViews')}</span><input id="itMax" type="number" min="0" value="0"></label><label class="field"><span>${t('live.weight')}</span><input id="itWeight" type="number" min="1" value="1"></label></div>
+          <div class="actions item-form-actions"><button class="ghost" id="resetItem">${t('live.clear')}</button><button class="primary" id="saveDraftItem">${t('live.addItem')}</button></div>
+        </div>
+        <div class="card item-list-card"><div class="section-title"><h3>${tx('二维码池','QR pool')}</h3><p class="muted">${tx('按排序从小到大展示；保存前均为草稿变更。','Sorted ascending. Changes stay in draft until saved.')}</p></div><div class="item-card-list" id="itemsGrid"></div></div>
+      </div>
+    </section>
+    <section class="tab-panel" id="liveTab-publish" hidden><div id="livePublishSummary" class="publish-summary"></div></section>
+  </div><div class="form-actions live-editor-actions"><button class="ghost" data-close="1">${t('common.close')}</button><button class="ghost" id="saveLiveClose">${t('live.saveClose')}</button><button class="primary" id="saveLiveBundle">${t('live.saveAll')}</button></div>`;
 }
 function bindLiveEditor() {
   document.querySelectorAll('[data-live-tab]').forEach(btn => btn.onclick = () => setLiveEditorTab(btn.dataset.liveTab));
@@ -411,6 +559,8 @@ function bindLiveEditor() {
   document.getElementById('saveLiveClose').onclick = () => saveLiveBundle(true);
   ['lTitle','lCode','lStatus','lStrategy','lFallback'].forEach(id => document.getElementById(id)?.addEventListener('input', updateLivePublishSummary));
   document.getElementById('lCode')?.addEventListener('input', updateLiveLinkBlocks);
+  document.getElementById('itImage')?.addEventListener('input', updateItemImagePreview);
+  bindQRDesigner('l', () => val('lCode') ? publicLive(val('lCode')) : `${baseURL}/q/preview`);
 }
 function setLiveEditorTab(tab) {
   state.liveEditor.activeTab = tab;
@@ -418,7 +568,7 @@ function setLiveEditorTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(panel => panel.hidden = panel.id !== `liveTab-${tab}`);
   if (tab === 'publish') updateLivePublishSummary();
 }
-function linkBoxHTML(link, code) { return `<div><strong>${t('live.link')}</strong><p>${esc(link)}</p></div><div class="actions"><button class="ghost" id="copyLiveLink">${t('common.copy')}</button><a class="button ghost" target="_blank" href="/qr/live/${esc(code)}.png">${t('live.qr')}</a></div>`; }
+function linkBoxHTML(link, code) { return `<div><strong>${t('live.link')}</strong><p>${esc(link)}</p></div><div class="actions"><button class="ghost" id="copyLiveLink">${t('common.copy')}</button>${qrDownloadButtonsHTML('live', code, true)}</div>`; }
 function unsavedLinkHTML() { return `<div><strong>${t('live.link')}</strong><p>${t('live.unsavedLink')}</p></div>`; }
 function updateLiveLinkBlocks() {
   const code = val('lCode');
@@ -427,9 +577,11 @@ function updateLiveLinkBlocks() {
     box.innerHTML = code ? linkBoxHTML(publicLive(code), code) : unsavedLinkHTML();
     const copyBtn = document.getElementById('copyLiveLink');
     if (copyBtn) copyBtn.onclick = () => copy(publicLive(code));
+    bindQRDownloadButtons(box);
   }
+  updateQRPreview('l', code ? publicLive(code) : `${baseURL}/q/preview`);
 }
-function livePayloadFromForm() { return { title: val('lTitle'), code: val('lCode'), description: val('lDesc'), status: val('lStatus'), rotation_strategy: val('lStrategy'), guide_title: val('lGuideTitle'), guide_text: val('lGuideText'), fallback_url: val('lFallback') }; }
+function livePayloadFromForm() { return { title: val('lTitle'), code: val('lCode'), description: val('lDesc'), status: val('lStatus'), rotation_strategy: val('lStrategy'), guide_title: val('lGuideTitle'), guide_text: val('lGuideText'), fallback_url: val('lFallback'), ...qrConfigFrom('l') }; }
 function itemFromForm() {
   const starts = val('itStarts'), expires = val('itExpires'), maxViews = num('itMax'), weight = num('itWeight') || 1;
   if (!val('itImage')) throw new Error(state.locale === 'zh' ? '请先上传或填写二维码图片' : 'Upload or fill a QR image first');
@@ -461,26 +613,57 @@ function resetItemForm() {
   document.getElementById('itMax').value = 0;
   document.getElementById('itWeight').value = 1;
   document.getElementById('itFile').value = '';
+  updateItemImagePreview();
 }
 async function uploadSelectedImage(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  await uploadImageInto(e, 'itImage', updateItemImagePreview);
+}
+async function uploadImageInto(e, targetID, afterUpload) {
   const file = e.target.files?.[0];
   if (!file) return;
   const fd = new FormData();
   fd.append('file', file);
   const data = await api('/api/admin/uploads/images', { method: 'POST', body: fd });
-  document.getElementById('itImage').value = data.url;
+  document.getElementById(targetID).value = data.url;
+  if (typeof afterUpload === 'function') afterUpload();
   toast(state.locale === 'zh' ? '图片已上传' : 'Image uploaded');
 }
 function sortedEditorItems() { return state.liveEditor.items.map((it, index) => ({ it, index })).sort((a, b) => (Number(a.it.sort_order || 100) - Number(b.it.sort_order || 100)) || ((a.it.id || 0) - (b.it.id || 0)) || (a.index - b.index)); }
 function renderLiveEditorItems() {
-  const tbody = document.getElementById('itemsTbody');
-  if (!tbody || !state.liveEditor) return;
+  const grid = document.getElementById('itemsGrid');
+  if (!grid || !state.liveEditor) return;
   const rows = sortedEditorItems();
-  tbody.innerHTML = rows.map(({ it, index }) => `<tr><td>${it.qr_image_url ? `<img class="preview-img" src="${esc(it.qr_image_url)}" alt="">` : '-'}</td><td><strong>${esc(it.title || (state.locale === 'zh' ? '未命名' : 'Untitled'))}</strong><br><span class="muted">${t('live.sort')} ${Number(it.sort_order || 100)} · ${it.id ? t('live.saved') : t('live.draft')}</span>${it.review_note ? `<br><span class="muted">${esc(it.review_note)}</span>` : ''}</td><td>${statusBadge(it.status)}</td><td>${approvalBadge(it.approval_status)}</td><td><span class="muted">${fmtDate(it.starts_at)} → ${fmtDate(it.expires_at)}</span></td><td>${Number(it.view_count || 0).toLocaleString()} / ${it.max_views ? Number(it.max_views).toLocaleString() : (state.locale === 'zh' ? '不限' : 'Unlimited')}</td><td><div class="actions"><button class="ghost" data-edit-draft-item="${index}">${t('common.edit')}</button>${it.id ? reviewButtons('item', it.id, it.approval_status, false, index) : ''}<button class="danger" data-del-draft-item="${index}">${state.locale === 'zh' ? '移除' : 'Remove'}</button></div></td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">${t('live.noItems')}</div></td></tr>`;
-  enhanceTables(tbody.closest('.table-card') || modalBody);
+  grid.innerHTML = rows.map(({ it, index }) => {
+    const title = it.title || tx('未命名二维码','Untitled QR');
+    const validity = `${fmtDate(it.starts_at)} → ${fmtDate(it.expires_at)}`;
+    const limit = `${Number(it.view_count || 0).toLocaleString()} / ${it.max_views ? Number(it.max_views).toLocaleString() : tx('不限','Unlimited')}`;
+    return `<article class="item-card">
+      <div class="item-card-img">${it.qr_image_url ? `<img src="${esc(it.qr_image_url)}" alt="${esc(title)}">` : `<span>${tx('未上传','No image')}</span>`}</div>
+      <div class="item-card-main"><div class="item-card-head"><strong>${esc(title)}</strong><div class="badge-stack">${statusBadge(it.status)}${approvalBadge(it.approval_status)}</div></div><p class="muted">${t('live.sort')} ${Number(it.sort_order || 100)} · ${it.id ? t('live.saved') : t('live.draft')} · ${tx('权重','Weight')} ${Number(it.weight || 1)}</p>${it.target_url ? `<p class="copy">${esc(it.target_url)}</p>` : ''}${it.review_note ? `<p class="muted">${esc(it.review_note)}</p>` : ''}<div class="item-card-meta"><span>${t('live.validity')}: ${esc(validity)}</span><span>${t('live.views')}: ${esc(limit)}</span></div></div>
+      <div class="item-card-actions"><button class="ghost" data-edit-draft-item="${index}">${t('common.edit')}</button>${it.id ? reviewButtons('item', it.id, it.approval_status, false, index) : ''}<button class="danger" data-del-draft-item="${index}">${tx('移除','Remove')}</button></div>
+    </article>`;
+  }).join('') || `<div class="empty">${t('live.noItems')}</div>`;
   document.querySelectorAll('[data-edit-draft-item]').forEach(b => b.onclick = () => fillDraftItem(Number(b.dataset.editDraftItem)));
   document.querySelectorAll('[data-del-draft-item]').forEach(b => b.onclick = () => deleteDraftItem(Number(b.dataset.delDraftItem)));
   bindReviewButtons();
+  updateLivePoolSummary();
+}
+function updateItemImagePreview() {
+  const box = document.getElementById('itImagePreview');
+  if (!box) return;
+  const src = val('itImage');
+  box.innerHTML = src ? `<img src="${esc(src)}" alt="">` : tx('预览','Preview');
+}
+function updateLivePoolSummary() {
+  const box = document.getElementById('livePoolSummary');
+  if (!box || !state.liveEditor) return;
+  const items = state.liveEditor.items || [];
+  const active = items.filter(it => it.status === 'active').length;
+  const approved = items.filter(it => it.approval_status === 'approved').length;
+  const limited = items.filter(it => Number(it.max_views || 0) > 0).length;
+  box.innerHTML = `<div class="pool-metric"><strong>${items.length}</strong><span>${t('live.items')}</span></div><div class="pool-metric"><strong>${active}</strong><span>${t('common.enabled')}</span></div><div class="pool-metric"><strong>${approved}</strong><span>${t('common.approved')}</span></div><div class="pool-metric"><strong>${limited}</strong><span>${tx('有限展示','Limited')}</span></div>`;
 }
 function fillDraftItem(index) {
   const it = state.liveEditor.items[index];
@@ -495,6 +678,7 @@ function fillDraftItem(index) {
   document.getElementById('itExpires').value = it.expires_at || '';
   document.getElementById('itMax').value = it.max_views || 0;
   document.getElementById('itWeight').value = it.weight || 1;
+  updateItemImagePreview();
   setLiveEditorTab('items');
   toast(state.locale === 'zh' ? '已载入到左侧表单' : 'Loaded into form');
 }
@@ -548,9 +732,11 @@ function updateLivePublishSummary() {
   const activeItems = items.filter(x => x.status === 'active').length;
   const approvedItems = items.filter(x => x.approval_status === 'approved').length;
   const needsApproval = state.liveEditor.approvalStatus !== 'approved' || approvedItems < items.length;
-  wrap.innerHTML = `<div class="grid publish-grid"><div class="card"><h3>${t('live.title')}</h3><div class="publish-value">${esc(payload.title || (state.locale === 'zh' ? '未命名活码' : 'Untitled'))}</div></div><div class="card"><h3>${t('live.strategy')}</h3><div class="publish-value">${strategyName(payload.rotation_strategy)}</div></div><div class="card"><h3>${t('live.items')}</h3><div class="publish-value">${items.length} ${state.locale === 'zh' ? '张' : ''}</div><p class="muted">${t('common.enabled')} ${activeItems} · ${t('common.approved')} ${approvedItems}</p></div><div class="card"><h3>${t('common.review')}</h3><div class="publish-value">${approvalBadge(state.liveEditor.approvalStatus)}</div></div></div><div class="card publish-link-card"><h2>${t('live.publishEntry')}</h2>${link ? `<p class="copy publish-link">${esc(link)}</p><div class="actions"><button class="primary" id="copyPublishLive">${t('common.copy')}</button><a class="button ghost" target="_blank" href="/qr/live/${esc(code)}.png">${t('live.qr')}</a></div>` : `<p class="muted">${t('live.noCode')}</p>`}${needsApproval ? `<p class="muted warn-text">${t('live.approvalWarn')}</p>` : ''}${items.length ? '' : `<p class="muted warn-text">${t('live.noItemWarn')}</p>`}</div>`;
+  const cfg = payload;
+  wrap.innerHTML = `<div class="grid publish-grid"><div class="card"><h3>${t('live.title')}</h3><div class="publish-value">${esc(payload.title || tx('未命名活码','Untitled'))}</div></div><div class="card"><h3>${t('live.strategy')}</h3><div class="publish-value">${strategyName(payload.rotation_strategy)}</div></div><div class="card"><h3>${t('live.items')}</h3><div class="publish-value">${items.length} ${state.locale === 'zh' ? '张' : ''}</div><p class="muted">${t('common.enabled')} ${activeItems} · ${t('common.approved')} ${approvedItems}</p></div><div class="card"><h3>${t('common.review')}</h3><div class="publish-value">${approvalBadge(state.liveEditor.approvalStatus)}</div></div></div><div class="card publish-link-card"><div class="publish-layout"><div><h2>${t('live.publishEntry')}</h2>${link ? `<p class="copy publish-link">${esc(link)}</p><div class="actions"><button class="primary" id="copyPublishLive">${t('common.copy')}</button>${qrDownloadButtonsHTML('live', code, false)}</div>` : `<p class="muted">${t('live.noCode')}</p>`}${needsApproval ? `<p class="muted warn-text">${t('live.approvalWarn')}</p>` : ''}${items.length ? '' : `<p class="muted warn-text">${t('live.noItemWarn')}</p>`}</div><div class="publish-qr-preview"><img src="${esc(qrPreviewPath(link || `${baseURL}/q/preview`, cfg))}" alt="${esc(t('live.qr'))}"><span>${esc(cfg.qr_style || 'rounded')}</span></div></div></div>`;
   const copyBtn = document.getElementById('copyPublishLive');
   if (copyBtn) copyBtn.onclick = () => copy(link);
+  bindQRDownloadButtons(wrap);
 }
 
 async function renderSettings() {

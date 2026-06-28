@@ -1,0 +1,2 @@
+ALTER TABLE short_links ADD COLUMN IF NOT EXISTS qr_logo_url VARCHAR(1024) NULL AFTER qr_background;
+ALTER TABLE live_qrs ADD COLUMN IF NOT EXISTS qr_logo_url VARCHAR(1024) NULL AFTER qr_background;

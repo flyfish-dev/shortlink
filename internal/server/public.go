@@ -3,7 +3,13 @@ package server
 import (
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -153,7 +159,7 @@ func (s *Server) recordVisit(r *http.Request, v *model.VisitLog) {
 }
 
 func (s *Server) shortQRCode(w http.ResponseWriter, r *http.Request) {
-	code := strings.TrimSuffix(strings.Trim(strings.TrimPrefix(r.URL.Path, "/qr/short/"), "/"), ".png")
+	code, format := parseQRPath(r.URL.Path, "/qr/short/")
 	if code == "" {
 		http.NotFound(w, r)
 		return
@@ -163,11 +169,11 @@ func (s *Server) shortQRCode(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	s.writeStyledQRCode(w, publicShortURL(s.publicBaseURL(r), code), link.QRStyle, link.QRForeground, link.QRBackground)
+	s.writeStyledQRCode(w, publicShortURL(s.publicBaseURL(r), code), format, link.QRStyle, link.QRForeground, link.QRBackground, link.QRLogoURL)
 }
 
 func (s *Server) liveQRCode(w http.ResponseWriter, r *http.Request) {
-	code := strings.TrimSuffix(strings.Trim(strings.TrimPrefix(r.URL.Path, "/qr/live/"), "/"), ".png")
+	code, format := parseQRPath(r.URL.Path, "/qr/live/")
 	if code == "" {
 		http.NotFound(w, r)
 		return
@@ -177,23 +183,70 @@ func (s *Server) liveQRCode(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	s.writeStyledQRCode(w, publicLiveURL(s.publicBaseURL(r), code), live.QRStyle, live.QRForeground, live.QRBackground)
+	s.writeStyledQRCode(w, publicLiveURL(s.publicBaseURL(r), code), format, live.QRStyle, live.QRForeground, live.QRBackground, live.QRLogoURL)
 }
 
 func (s *Server) writeQRCode(w http.ResponseWriter, content string) {
-	s.writeStyledQRCode(w, content, "classic", "#000000", "#ffffff")
+	s.writeStyledQRCode(w, content, "svg", "classic", "#000000", "#ffffff", "")
 }
 
-func (s *Server) writeStyledQRCode(w http.ResponseWriter, content, style, foreground, background string) {
+func (s *Server) writeStyledQRCode(w http.ResponseWriter, content, format, style, foreground, background, logoURL string) {
 	style, foreground, background = normalizeQRPayload(style, foreground, background)
-	svg, err := localqr.StyledSVG(content, localqr.Options{Scale: 10, Border: 4, Shape: style, Foreground: foreground, Background: background})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	format = strings.ToLower(strings.TrimSpace(format))
+	if format == "" {
+		format = "svg"
 	}
-	w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
-	w.Header().Set("Cache-Control", "public, max-age=3600")
-	_, _ = w.Write([]byte(svg))
+	opt := localqr.Options{Scale: 10, Border: 4, Shape: style, Foreground: foreground, Background: background, LogoURL: logoURL}
+	switch format {
+	case "svg":
+		svg, err := localqr.StyledSVG(content, opt)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		_, _ = w.Write([]byte(svg))
+	case "png":
+		pngBytes, err := localqr.StyledPNG(content, opt, s.loadQRLogoImage(logoURL))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		_, _ = w.Write(pngBytes)
+	default:
+		http.Error(w, "unsupported QR format", http.StatusBadRequest)
+	}
+}
+
+func parseQRPath(path, prefix string) (string, string) {
+	raw := strings.Trim(strings.TrimPrefix(path, prefix), "/")
+	format := "svg"
+	if ext := strings.ToLower(filepath.Ext(raw)); ext != "" {
+		format = strings.TrimPrefix(ext, ".")
+		raw = strings.TrimSuffix(raw, ext)
+	}
+	return strings.TrimSpace(raw), format
+}
+
+func (s *Server) loadQRLogoImage(logoURL string) image.Image {
+	logoURL = strings.TrimSpace(logoURL)
+	if logoURL == "" || !strings.HasPrefix(logoURL, "/uploads/") || strings.Contains(logoURL, "..") {
+		return nil
+	}
+	path := filepath.Join(s.cfg.DataDir, strings.TrimPrefix(logoURL, "/"))
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	if err != nil {
+		return nil
+	}
+	return img
 }
 
 func (s *Server) renderPublicError(w http.ResponseWriter, r *http.Request, status int, title, message string) {

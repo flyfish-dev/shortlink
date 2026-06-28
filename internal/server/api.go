@@ -99,6 +99,8 @@ func (s *Server) adminAPI(w http.ResponseWriter, r *http.Request) {
 		s.apiRotateRecoveryKey(w, r)
 	case path == "/account" && r.Method == http.MethodPut:
 		s.apiUpdateAccount(w, r)
+	case path == "/qr-preview" && r.Method == http.MethodGet:
+		s.apiQRPreview(w, r)
 	case path == "/settings" && r.Method == http.MethodGet:
 		s.apiGetSettings(w, r)
 	case path == "/settings" && r.Method == http.MethodPut:
@@ -138,6 +140,19 @@ func (s *Server) adminAPI(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeJSON(w, http.StatusNotFound, apiErr("not_found", "接口不存在"))
 	}
+}
+
+func (s *Server) apiQRPreview(w http.ResponseWriter, r *http.Request) {
+	content := strings.TrimSpace(r.URL.Query().Get("content"))
+	if content == "" {
+		content = s.publicBaseURL(r) + "/q/preview"
+	}
+	logoURL, err := normalizeImageURL(r.URL.Query().Get("logo_url"), "二维码中心贴图")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	s.writeStyledQRCode(w, content, "svg", r.URL.Query().Get("style"), r.URL.Query().Get("foreground"), r.URL.Query().Get("background"), logoURL)
 }
 
 func (s *Server) apiMe(w http.ResponseWriter, r *http.Request) {
@@ -610,17 +625,12 @@ func (s *Server) apiLiveQRItemDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) itemPayloadToModel(p liveQRItemPayload) (*model.LiveQRItem, error) {
-	img := strings.TrimSpace(p.QRImageURL)
+	img, err := normalizeImageURL(p.QRImageURL, "二维码图片")
+	if err != nil {
+		return nil, err
+	}
 	if img == "" {
 		return nil, fmt.Errorf("请上传或填写二维码图片地址")
-	}
-	// Allow local /uploads/... and absolute http(s) image URLs.
-	if strings.HasPrefix(img, "http://") || strings.HasPrefix(img, "https://") {
-		if err := validateHTTPURL(img); err != nil {
-			return nil, fmt.Errorf("二维码图片地址无效：%w", err)
-		}
-	} else if !strings.HasPrefix(img, "/uploads/") {
-		return nil, fmt.Errorf("二维码图片地址只允许 /uploads/... 或 http(s) 图片地址")
 	}
 	target := strings.TrimSpace(p.TargetURL)
 	if target != "" {
@@ -654,6 +664,23 @@ func (s *Server) itemPayloadToModel(p liveQRItemPayload) (*model.LiveQRItem, err
 		return nil, fmt.Errorf("状态只支持 active/disabled")
 	}
 	return &model.LiveQRItem{Title: strings.TrimSpace(p.Title), QRImageURL: img, TargetURL: target, Status: status, StartsAt: starts, ExpiresAt: expires, MaxViews: p.MaxViews, SortOrder: p.SortOrder, Weight: p.Weight}, nil
+}
+
+func normalizeImageURL(raw, label string) (string, error) {
+	img := strings.TrimSpace(raw)
+	if img == "" {
+		return "", nil
+	}
+	if strings.HasPrefix(img, "http://") || strings.HasPrefix(img, "https://") {
+		if err := validateHTTPURL(img); err != nil {
+			return "", fmt.Errorf("%s地址无效：%w", label, err)
+		}
+		return img, nil
+	}
+	if strings.HasPrefix(img, "/uploads/") {
+		return img, nil
+	}
+	return "", fmt.Errorf("%s地址只允许 /uploads/... 或 http(s) 图片地址", label)
 }
 
 func (s *Server) apiUploadImage(w http.ResponseWriter, r *http.Request) {

@@ -1,8 +1,12 @@
 package qrcode
 
 import (
+	"bytes"
 	"fmt"
 	"html"
+	"image"
+	"image/color"
+	"image/png"
 	"strings"
 )
 
@@ -13,6 +17,7 @@ type Options struct {
 	Foreground string
 	Background string
 	Shape      string // classic, rounded, dots
+	LogoURL    string
 }
 
 // SVG encodes text as a QR Code SVG using byte mode, error correction level L,
@@ -84,9 +89,190 @@ func StyledSVG(text string, opt Options) (string, error) {
 		}
 		b.WriteString(`"/>`)
 	}
+	if strings.TrimSpace(opt.LogoURL) != "" {
+		logoBox := max(5, qr.size/5)
+		padding := 1
+		x := (size - logoBox) / 2
+		y := (size - logoBox) / 2
+		b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="%d" rx="1.2" fill="%s" stroke="%s" stroke-width="0.35"/>`, x-padding, y-padding, logoBox+padding*2, logoBox+padding*2, html.EscapeString(opt.Background), html.EscapeString(opt.Background)))
+		b.WriteString(fmt.Sprintf(`<image href="%s" x="%d" y="%d" width="%d" height="%d" preserveAspectRatio="xMidYMid meet"/>`, html.EscapeString(strings.TrimSpace(opt.LogoURL)), x, y, logoBox, logoBox))
+	}
 	b.WriteString(fmt.Sprintf(`<title>%s</title>`, html.EscapeString(text)))
 	b.WriteString(`</svg>`)
 	return b.String(), nil
+}
+
+func StyledPNG(text string, opt Options, logo image.Image) ([]byte, error) {
+	img, err := StyledImage(text, opt, logo)
+	if err != nil {
+		return nil, err
+	}
+	var b bytes.Buffer
+	if err := png.Encode(&b, img); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+func StyledImage(text string, opt Options, logo image.Image) (image.Image, error) {
+	if opt.Scale <= 0 {
+		opt.Scale = 12
+	}
+	if opt.Border < 0 {
+		opt.Border = 4
+	}
+	if strings.TrimSpace(opt.Foreground) == "" {
+		opt.Foreground = "#111827"
+	}
+	if strings.TrimSpace(opt.Background) == "" {
+		opt.Background = "#ffffff"
+	}
+	shape := strings.ToLower(strings.TrimSpace(opt.Shape))
+	if shape == "" {
+		shape = "rounded"
+	}
+	qr, err := encode([]byte(text))
+	if err != nil {
+		return nil, err
+	}
+	size := qr.size + opt.Border*2
+	px := size * opt.Scale
+	fg := parseHexColor(opt.Foreground, color.RGBA{17, 24, 39, 255})
+	bg := parseHexColor(opt.Background, color.RGBA{255, 255, 255, 255})
+	dst := image.NewRGBA(image.Rect(0, 0, px, px))
+	fillRect(dst, dst.Bounds(), bg)
+	for y := 0; y < qr.size; y++ {
+		for x := 0; x < qr.size; x++ {
+			if !qr.modules[y][x] {
+				continue
+			}
+			r := image.Rect((x+opt.Border)*opt.Scale, (y+opt.Border)*opt.Scale, (x+opt.Border+1)*opt.Scale, (y+opt.Border+1)*opt.Scale)
+			if shape == "dots" {
+				fillCircle(dst, r, fg)
+			} else if shape == "rounded" {
+				fillRoundedRect(dst, r, opt.Scale/4, fg)
+			} else {
+				fillRect(dst, r, fg)
+			}
+		}
+	}
+	if logo != nil {
+		qrPx := qr.size * opt.Scale
+		logoSize := max(opt.Scale*5, int(float64(qrPx)*0.22))
+		logoSize = min(logoSize, int(float64(qrPx)*0.28))
+		pad := max(6, opt.Scale)
+		box := image.Rect((px-logoSize)/2-pad, (px-logoSize)/2-pad, (px+logoSize)/2+pad, (px+logoSize)/2+pad)
+		fillRoundedRect(dst, box, max(8, opt.Scale), bg)
+		scaled := scaleNearest(logo, logoSize, logoSize)
+		drawAt(dst, scaled, image.Pt((px-logoSize)/2, (px-logoSize)/2))
+	}
+	return dst, nil
+}
+
+func parseHexColor(v string, fallback color.RGBA) color.RGBA {
+	v = strings.TrimSpace(strings.TrimPrefix(v, "#"))
+	if len(v) == 3 {
+		v = strings.Repeat(v[0:1], 2) + strings.Repeat(v[1:2], 2) + strings.Repeat(v[2:3], 2)
+	}
+	if len(v) != 6 {
+		return fallback
+	}
+	var r, g, b uint8
+	if _, err := fmt.Sscanf(v, "%02x%02x%02x", &r, &g, &b); err != nil {
+		return fallback
+	}
+	return color.RGBA{r, g, b, 255}
+}
+
+func fillRect(img *image.RGBA, r image.Rectangle, c color.RGBA) {
+	r = r.Intersect(img.Bounds())
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			img.SetRGBA(x, y, c)
+		}
+	}
+}
+
+func fillCircle(img *image.RGBA, r image.Rectangle, c color.RGBA) {
+	cx := (r.Min.X + r.Max.X) / 2
+	cy := (r.Min.Y + r.Max.Y) / 2
+	radius := int(float64(min(r.Dx(), r.Dy())) * 0.43)
+	rr := radius * radius
+	for y := cy - radius; y <= cy+radius; y++ {
+		for x := cx - radius; x <= cx+radius; x++ {
+			dx, dy := x-cx, y-cy
+			if dx*dx+dy*dy <= rr && image.Pt(x, y).In(img.Bounds()) {
+				img.SetRGBA(x, y, c)
+			}
+		}
+	}
+}
+
+func fillRoundedRect(img *image.RGBA, r image.Rectangle, radius int, c color.RGBA) {
+	if radius <= 1 {
+		fillRect(img, r, c)
+		return
+	}
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if !image.Pt(x, y).In(img.Bounds()) {
+				continue
+			}
+			dx := min(x-r.Min.X, r.Max.X-1-x)
+			dy := min(y-r.Min.Y, r.Max.Y-1-y)
+			if dx >= radius || dy >= radius {
+				img.SetRGBA(x, y, c)
+				continue
+			}
+			cx := radius - dx
+			cy := radius - dy
+			if cx*cx+cy*cy <= radius*radius {
+				img.SetRGBA(x, y, c)
+			}
+		}
+	}
+}
+
+func scaleNearest(src image.Image, w, h int) *image.RGBA {
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	sb := src.Bounds()
+	for y := 0; y < h; y++ {
+		sy := sb.Min.Y + y*sb.Dy()/h
+		for x := 0; x < w; x++ {
+			sx := sb.Min.X + x*sb.Dx()/w
+			dst.Set(x, y, src.At(sx, sy))
+		}
+	}
+	return dst
+}
+
+func drawAt(dst *image.RGBA, src image.Image, p image.Point) {
+	sb := src.Bounds()
+	for y := 0; y < sb.Dy(); y++ {
+		for x := 0; x < sb.Dx(); x++ {
+			pt := image.Pt(p.X+x, p.Y+y)
+			if !pt.In(dst.Bounds()) {
+				continue
+			}
+			c := color.RGBAModel.Convert(src.At(sb.Min.X+x, sb.Min.Y+y)).(color.RGBA)
+			if c.A == 0 {
+				continue
+			}
+			if c.A == 255 {
+				dst.SetRGBA(pt.X, pt.Y, c)
+				continue
+			}
+			base := dst.RGBAAt(pt.X, pt.Y)
+			a := uint32(c.A)
+			ia := uint32(255 - c.A)
+			dst.SetRGBA(pt.X, pt.Y, color.RGBA{
+				R: uint8((uint32(c.R)*a + uint32(base.R)*ia) / 255),
+				G: uint8((uint32(c.G)*a + uint32(base.G)*ia) / 255),
+				B: uint8((uint32(c.B)*a + uint32(base.B)*ia) / 255),
+				A: 255,
+			})
+		}
+	}
 }
 
 type qrCode struct {

@@ -25,6 +25,7 @@ type extShortLinkPayload struct {
 	QRStyle      string `json:"qr_style"`
 	QRForeground string `json:"qr_foreground"`
 	QRBackground string `json:"qr_background"`
+	QRLogoURL    string `json:"qr_logo_url"`
 }
 
 func (s *Server) apiExtListShortLinks(w http.ResponseWriter, r *http.Request) {
@@ -192,7 +193,11 @@ func (s *Server) extShortPayloadToModel(p extShortLinkPayload, allowGenerate boo
 		return nil, fmt.Errorf("跳转类型只支持 301/302/307/308")
 	}
 	qrStyle, qrFg, qrBg := normalizeQRPayload(p.QRStyle, p.QRForeground, p.QRBackground)
-	return &model.ShortLink{Code: code, Title: strings.TrimSpace(p.Title), TargetURL: target, Status: status, RedirectType: p.RedirectType, StartsAt: starts, ExpiresAt: expires, MaxVisits: p.MaxVisits, FallbackURL: p.FallbackURL, Remark: p.Remark, QRStyle: qrStyle, QRForeground: qrFg, QRBackground: qrBg}, nil
+	qrLogoURL, err := normalizeImageURL(p.QRLogoURL, "二维码中心贴图")
+	if err != nil {
+		return nil, err
+	}
+	return &model.ShortLink{Code: code, Title: strings.TrimSpace(p.Title), TargetURL: target, Status: status, RedirectType: p.RedirectType, StartsAt: starts, ExpiresAt: expires, MaxVisits: p.MaxVisits, FallbackURL: p.FallbackURL, Remark: p.Remark, QRStyle: qrStyle, QRForeground: qrFg, QRBackground: qrBg, QRLogoURL: qrLogoURL}, nil
 }
 
 var _ = store.ErrNotFound
