@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.AppName}} · Login</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
 </head>
 <body class="login-body">
   <main class="login-card auth-card">
     <div class="auth-tools">
-      <button class="icon-btn" id="themeToggle" type="button">moon</button>
-      <button class="ghost compact-btn" id="langToggle" type="button">EN</button>
+      <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="切换主题"></button>
+      <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
     </div>
     <img class="brand-logo login-logo" src="/assets/brand.svg" alt="">
     <h1 id="appName">{{.AppName}}</h1>
@@ -55,13 +55,21 @@
       'login.recover':'Recover access','login.recoverHint':'If cookies or device tokens are lost, paste the recovery key saved in the dashboard.','login.recoveryKey':'Recovery key','login.recoverBtn':'Login with recovery key','settings.email':'Email',
       'msg.checking':'Checking browser token...','msg.sending':'Sending login link...','msg.binding':'Binding this browser...','msg.smtpMissing':'SMTP is not configured. Use a bound browser or recovery key.','msg.magicOnly':'System login mode is Magic Link.','msg.oneClickOnly':'System login mode is browser one-click.'
     }, zh: {
-      'login.desc':'Email Magic Link login is enabled. Bound browsers can enter in one click.', 'login.magicTitle':'Email Magic Link','login.magicHint':'Enter your email to receive a 15-minute one-time login link. New emails create a regular user account.', 'login.sendMagic':'Send login link','login.or':'or','login.oneClick':'Enter with this browser','login.oneClickHint':'Use Magic Link or recovery key on new devices.','login.recover':'Recover access','login.recoverHint':'Paste the saved recovery key to bind this browser.','login.recoveryKey':'Recovery key','login.recoverBtn':'Login with recovery key','settings.email':'Email','msg.checking':'Checking browser token...','msg.sending':'Sending login link...','msg.binding':'Binding this browser...','msg.smtpMissing':'SMTP is not configured. Use a bound browser or recovery key.','msg.magicOnly':'System login mode is Magic Link.','msg.oneClickOnly':'System login mode is browser one-click.'
+      'login.desc':'使用邮箱 Magic Link 快速登录；已绑定浏览器仍可一键进入。',
+      'login.magicTitle':'邮箱 Magic Link','login.magicHint':'输入邮箱，系统会发送 15 分钟有效的一次性登录链接。新邮箱会创建普通用户账户。',
+      'login.sendMagic':'发送登录链接','login.or':'或','login.oneClick':'使用本浏览器进入','login.oneClickHint':'仅已绑定浏览器可直接进入；新设备请使用 Magic Link 或恢复 Key。','login.recover':'恢复访问','login.recoverHint':'如果 Cookie 或设备令牌丢失，请粘贴控制台保存的恢复 Key。','login.recoveryKey':'恢复 Key','login.recoverBtn':'使用恢复 Key 登录','settings.email':'邮箱',
+      'msg.checking':'正在检查浏览器令牌...','msg.sending':'正在发送登录链接...','msg.binding':'正在绑定当前浏览器...','msg.smtpMissing':'SMTP 尚未配置。请使用已绑定浏览器或恢复 Key。','msg.magicOnly':'系统登录模式为 Magic Link。','msg.oneClickOnly':'系统登录模式为浏览器一键登录。'
     }};
     const detectLang = () => (localStorage.getItem('asl_lang') || navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
     let lang = detectLang();
+    let bootstrapSettings = {};
     const t = k => I18N[lang][k] || I18N.en[k] || k;
-    function applyLang(){ document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'; document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n)); document.getElementById('langToggle').textContent = lang === 'zh' ? '中文' : 'EN'; }
-    function applyTheme(){ const saved = localStorage.getItem('asl_theme'); const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.dataset.theme = dark ? 'dark' : 'light'; document.getElementById('themeToggle').textContent = dark ? 'sun' : 'moon'; }
+    const themeToggleHTML = '<span class="theme-option theme-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="theme-icon-fill" cx="12" cy="12" r="4.4"/><path class="theme-icon-accent" d="M12 2.9v2.2M12 18.9v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.9 12h2.2M18.9 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg></span><span class="theme-option theme-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="theme-icon-fill" d="M19.3 14.4A7.4 7.4 0 0 1 9.6 4.7 8.2 8.2 0 1 0 19.3 14.4Z"/><path class="theme-icon-accent" d="M16.8 3.7l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/></svg></span>';
+    const localizedAppName = () => lang === 'en' ? (bootstrapSettings.app_name_en || bootstrapSettings.app_name || 'AI Shortlink') : (bootstrapSettings.app_name_zh || bootstrapSettings.app_name || '{{.AppName}}');
+    function syncAppName(){ const el = document.getElementById('appName'); if (el) el.textContent = localizedAppName(); }
+    function syncLangToggle(){ const btn = document.getElementById('langToggle'); btn.dataset.locale = lang; btn.innerHTML = '<span>中文</span><span>EN</span>'; btn.setAttribute('aria-label', lang === 'zh' ? '切换为英文' : 'Switch to Chinese'); btn.setAttribute('title', btn.getAttribute('aria-label')); }
+    function applyLang(){ document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'; document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n)); syncAppName(); syncLangToggle(); applyTheme(); }
+    function applyTheme(){ const saved = localStorage.getItem('asl_theme'); const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.dataset.theme = dark ? 'dark' : 'light'; const btn = document.getElementById('themeToggle'); btn.innerHTML = themeToggleHTML; btn.dataset.themeMode = dark ? 'dark' : 'light'; btn.setAttribute('aria-label', dark ? (lang === 'zh' ? '当前夜间模式，切换到白天模式' : 'Dark mode active, switch to light mode') : (lang === 'zh' ? '当前白天模式，切换到夜间模式' : 'Light mode active, switch to dark mode')); btn.setAttribute('title', btn.getAttribute('aria-label')); }
     document.getElementById('langToggle').onclick = () => { lang = lang === 'zh' ? 'en' : 'zh'; localStorage.setItem('asl_lang', lang); applyLang(); };
     document.getElementById('themeToggle').onclick = () => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('asl_theme', next); applyTheme(); };
     applyTheme(); applyLang();
@@ -76,7 +84,8 @@
 
     fetch('/api/public/bootstrap').then(r => r.json()).then(data => {
       const st = data.settings || {};
-      if (st.app_name) document.getElementById('appName').textContent = st.app_name;
+      bootstrapSettings = st;
+      syncAppName();
       if (st.login_mode === 'magic') msg.textContent = t('msg.magicOnly');
       if (st.login_mode === 'one_click') magicMsg.textContent = t('msg.oneClickOnly');
       if (!st.smtp_enabled || !st.smtp_password_set) magicMsg.textContent = t('msg.smtpMissing');

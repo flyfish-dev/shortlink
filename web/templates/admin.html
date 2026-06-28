@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.AppName}} · Console</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/styles.css">
-  <link rel="stylesheet" href="/assets/platform_ext.css">
+  <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
+  <link rel="stylesheet" href="/assets/platform_ext.css?v={{.AssetVersion}}">
 </head>
 <body>
   <div class="shell" id="app" data-base-url="{{.BaseURL}}">
@@ -16,12 +16,12 @@
         <button class="nav active" data-view="dashboard" data-i18n="nav.dashboard">Dashboard</button>
         <button class="nav" data-view="shorts" data-i18n="nav.shorts">Short links</button>
         <button class="nav" data-view="lives" data-i18n="nav.lives">Live QR</button>
-        <button class="nav admin-only" data-view="users" data-i18n="nav.users">Users</button>
+        <button class="nav admin-only" data-view="users" data-i18n="nav.users">用户管理</button>
         <button class="nav admin-only" data-view="settings" data-i18n="nav.settings">Settings</button>
       </nav>
       <div class="side-foot">
-        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle theme">moon</button>
-        <button class="ghost compact-btn" id="langToggle" type="button">中文</button>
+        <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="Toggle theme"></button>
+        <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
         <a class="logout-link" href="/auth/logout" data-i18n="common.logout">Logout</a>
       </div>
     </aside>
@@ -52,7 +52,7 @@
   </div>
 
   <template id="loadingTpl"><div class="empty" data-i18n="common.loading">Loading...</div></template>
-  <script src="/assets/app.js" type="module"></script>
-  <script src="/assets/platform_ext.js"></script>
+  <script src="/assets/app.js?v={{.AssetVersion}}" type="module"></script>
+  <script src="/assets/platform_ext.js?v={{.AssetVersion}}"></script>
 </body>
 </html>

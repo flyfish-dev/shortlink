@@ -36,10 +36,11 @@ type actorInfo struct {
 func (a *actorInfo) IsAdmin() bool { return a != nil && a.Account != nil && a.Account.Role == "admin" }
 
 type Server struct {
-	cfg        config.Config
-	storeValue atomic.Value // stores *store.Store
-	auth       *auth.Manager
-	tpl        *template.Template
+	cfg          config.Config
+	storeValue   atomic.Value // stores *store.Store
+	auth         *auth.Manager
+	tpl          *template.Template
+	assetVersion string
 }
 
 func New(cfg config.Config, st *store.Store) (*Server, error) {
@@ -50,7 +51,7 @@ func New(cfg config.Config, st *store.Store) (*Server, error) {
 	if err := os.MkdirAll(filepath.Join(cfg.DataDir, "uploads"), 0755); err != nil {
 		return nil, err
 	}
-	srv := &Server{cfg: cfg, auth: auth.NewManager(cfg.AppSecret, cfg.SessionTTL, cfg.CookieSecure), tpl: t}
+	srv := &Server{cfg: cfg, auth: auth.NewManager(cfg.AppSecret, cfg.SessionTTL, cfg.CookieSecure), tpl: t, assetVersion: strconv.FormatInt(time.Now().Unix(), 10)}
 	srv.setStore(st)
 	return srv, nil
 }
@@ -442,7 +443,15 @@ func (s *Server) currentActor(ctx context.Context) (*actorInfo, error) {
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.tpl.ExecuteTemplate(w, name, data); err != nil {
+	view := map[string]any{"AssetVersion": s.assetVersion}
+	if m, ok := data.(map[string]any); ok {
+		for k, v := range m {
+			view[k] = v
+		}
+	} else if data != nil {
+		view["Data"] = data
+	}
+	if err := s.tpl.ExecuteTemplate(w, name, view); err != nil {
 		log.Printf("template %s: %v", name, err)
 	}
 }
