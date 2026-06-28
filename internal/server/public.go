@@ -158,11 +158,12 @@ func (s *Server) shortQRCode(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if _, err := s.store().GetShortLinkByCode(r.Context(), code); err != nil {
+	link, err := s.store().GetShortLinkByCode(r.Context(), code)
+	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	s.writeQRCode(w, publicShortURL(s.publicBaseURL(r), code))
+	s.writeStyledQRCode(w, publicShortURL(s.publicBaseURL(r), code), link.QRStyle, link.QRForeground, link.QRBackground)
 }
 
 func (s *Server) liveQRCode(w http.ResponseWriter, r *http.Request) {
@@ -171,15 +172,21 @@ func (s *Server) liveQRCode(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if _, err := s.store().GetLiveQRByCode(r.Context(), code); err != nil {
+	live, err := s.store().GetLiveQRByCode(r.Context(), code)
+	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	s.writeQRCode(w, publicLiveURL(s.publicBaseURL(r), code))
+	s.writeStyledQRCode(w, publicLiveURL(s.publicBaseURL(r), code), live.QRStyle, live.QRForeground, live.QRBackground)
 }
 
 func (s *Server) writeQRCode(w http.ResponseWriter, content string) {
-	svg, err := localqr.SVG(content, 10, 4)
+	s.writeStyledQRCode(w, content, "classic", "#000000", "#ffffff")
+}
+
+func (s *Server) writeStyledQRCode(w http.ResponseWriter, content, style, foreground, background string) {
+	style, foreground, background = normalizeQRPayload(style, foreground, background)
+	svg, err := localqr.StyledSVG(content, localqr.Options{Scale: 10, Border: 4, Shape: style, Foreground: foreground, Background: background})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
