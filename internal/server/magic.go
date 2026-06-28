@@ -41,12 +41,19 @@ func (s *Server) magicRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	acct, err := s.store().FindAdminAccountByEmail(r.Context(), email)
 	if errors.Is(err, store.ErrNotFound) {
-		// Avoid exposing whether an admin mailbox exists.
-		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "如果邮箱匹配管理员账户，登录链接会发送到该邮箱。"})
-		return
+		acct, _, err = s.createUserAccount(r.Context(), email, emailName(email))
+		if err != nil {
+			writeJSON(w, 500, apiErr("db", friendlyDBErr(err)))
+			return
+		}
+		_ = s.store().Audit(r.Context(), nil, "user_account.signup", "admin_account", &acct.ID, email, util.ClientIP(r, s.cfg.TrustProxy))
 	}
 	if err != nil {
 		writeJSON(w, 500, apiErr("db", err.Error()))
+		return
+	}
+	if acct.Status != "active" {
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "如果邮箱账户可用，登录链接会发送到该邮箱。"})
 		return
 	}
 	token, err := auth.RandomToken(32)
@@ -66,6 +73,13 @@ func (s *Server) magicRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "登录链接已发送，请在 15 分钟内打开。"})
+}
+
+func emailName(email string) string {
+	if at := strings.Index(email, "@"); at > 0 {
+		return email[:at]
+	}
+	return email
 }
 
 func (s *Server) magicConsume(w http.ResponseWriter, r *http.Request) {
@@ -96,8 +110,8 @@ func (s *Server) magicConsume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	acct, err := s.store().GetAdminAccount(r.Context(), mt.AccountID)
-	if err != nil {
-		s.renderPublicError(w, r, http.StatusUnauthorized, "账户不存在", "该登录链接对应的管理员账户不存在。 ")
+	if err != nil || acct.Status != "active" {
+		s.renderPublicError(w, r, http.StatusUnauthorized, "账户不可用", "该登录链接对应的账户不存在或已停用。")
 		return
 	}
 	ip := util.ClientIP(r, s.cfg.TrustProxy)
@@ -126,6 +140,6 @@ func (s *Server) magicConsume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.auth.SetSession(w, dev.ID, browserID)
-	_ = s.store().Audit(r.Context(), &dev.ID, "admin_account.magic_login", "admin_account", &acct.ID, "magic link", ip)
+	_ = s.store().Audit(r.Context(), &dev.ID, "account.magic_login", "admin_account", &acct.ID, "magic link", ip)
 	http.Redirect(w, r, "/admin", http.StatusFound)
 }
