@@ -19,12 +19,9 @@ func (s *Server) settingsFromMap(m map[string]string) model.SystemSettings {
 	if m == nil {
 		m = map[string]string{}
 	}
-	legacyAppName := firstNonEmpty(m["app_name"], s.cfg.AppName, "AI短链平台")
 	st := model.SystemSettings{
 		Installed:     settingBool(m, "installed"),
-		AppName:       legacyAppName,
-		AppNameZH:     firstNonEmpty(m["app_name_zh"], legacyAppName, "AI短链平台"),
-		AppNameEN:     firstNonEmpty(m["app_name_en"], "AI Shortlink"),
+		AppName:       firstNonEmpty(m["app_name"], s.cfg.AppName, "AI短链平台"),
 		BaseURL:       strings.TrimRight(firstNonEmpty(m["base_url"], s.cfg.BaseURL), "/"),
 		DefaultLocale: firstNonEmpty(m["default_locale"], "zh-CN"),
 		LoginMode:     firstNonEmpty(m["login_mode"], "hybrid"),
@@ -42,11 +39,6 @@ func (s *Server) settingsFromMap(m map[string]string) model.SystemSettings {
 	}
 	if st.DefaultLocale == "" {
 		st.DefaultLocale = "zh-CN"
-	}
-	if strings.HasPrefix(strings.ToLower(st.DefaultLocale), "en") {
-		st.AppName = firstNonEmpty(st.AppNameEN, st.AppNameZH, legacyAppName)
-	} else {
-		st.AppName = firstNonEmpty(st.AppNameZH, st.AppNameEN, legacyAppName)
 	}
 	return st
 }
@@ -80,13 +72,9 @@ func (s *Server) smtpPassword(ctx context.Context) string {
 }
 
 func settingsToMap(st model.SystemSettings) map[string]string {
-	appNameZH := firstNonEmpty(st.AppNameZH, st.AppName, "AI短链平台")
-	appNameEN := firstNonEmpty(st.AppNameEN, "AI Shortlink")
 	return map[string]string{
 		"installed":      boolSetting(st.Installed),
-		"app_name":       strings.TrimSpace(appNameZH),
-		"app_name_zh":    strings.TrimSpace(appNameZH),
-		"app_name_en":    strings.TrimSpace(appNameEN),
+		"app_name":       strings.TrimSpace(st.AppName),
 		"base_url":       strings.TrimRight(strings.TrimSpace(st.BaseURL), "/"),
 		"default_locale": strings.TrimSpace(st.DefaultLocale),
 		"login_mode":     strings.TrimSpace(st.LoginMode),
@@ -128,7 +116,7 @@ func boolSetting(v bool) string {
 
 func accountResponse(s *Server, acct *model.AdminAccount) map[string]any {
 	recoveryKey := s.recoveryKeyForAccount(acct)
-	m := map[string]any{"id": acct.ID, "email": acct.Email, "name": acct.Name, "recovery_key_available": recoveryKey != ""}
+	m := map[string]any{"id": acct.ID, "email": acct.Email, "name": acct.Name, "role": acct.Role, "status": acct.Status, "is_admin": acct.Role == "admin", "recovery_key_available": recoveryKey != ""}
 	if recoveryKey != "" {
 		m["recovery_key"] = recoveryKey
 	}
