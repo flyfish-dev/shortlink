@@ -4,6 +4,7 @@ import "time"
 
 type ShortLink struct {
 	ID             int64      `json:"id"`
+	OwnerAccountID int64      `json:"owner_account_id"`
 	Code           string     `json:"code"`
 	Title          string     `json:"title"`
 	TargetURL      string     `json:"target_url"`
@@ -19,12 +20,16 @@ type ShortLink struct {
 	VisitCount     int64      `json:"visit_count"`
 	FallbackURL    string     `json:"fallback_url"`
 	Remark         string     `json:"remark"`
+	QRStyle        string     `json:"qr_style"`
+	QRForeground   string     `json:"qr_foreground"`
+	QRBackground   string     `json:"qr_background"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 type LiveQR struct {
 	ID               int64        `json:"id"`
+	OwnerAccountID   int64        `json:"owner_account_id"`
 	Code             string       `json:"code"`
 	Title            string       `json:"title"`
 	Description      string       `json:"description"`
@@ -39,6 +44,9 @@ type LiveQR struct {
 	GuideTitle       string       `json:"guide_title"`
 	GuideText        string       `json:"guide_text"`
 	FallbackURL      string       `json:"fallback_url"`
+	QRStyle          string       `json:"qr_style"`
+	QRForeground     string       `json:"qr_foreground"`
+	QRBackground     string       `json:"qr_background"`
 	CreatedAt        time.Time    `json:"created_at"`
 	UpdatedAt        time.Time    `json:"updated_at"`
 	Items            []LiveQRItem `json:"items,omitempty"`
@@ -88,6 +96,8 @@ type AdminAccount struct {
 	ID                int64     `json:"id"`
 	Email             string    `json:"email"`
 	Name              string    `json:"name"`
+	Role              string    `json:"role"`
+	Status            string    `json:"status"`
 	RecoveryKeyHash   string    `json:"-"`
 	RecoveryKeyCipher string    `json:"-"`
 	CreatedAt         time.Time `json:"created_at"`
@@ -110,8 +120,6 @@ type AdminDevice struct {
 type SystemSettings struct {
 	Installed       bool   `json:"installed"`
 	AppName         string `json:"app_name"`
-	AppNameZH       string `json:"app_name_zh"`
-	AppNameEN       string `json:"app_name_en"`
 	BaseURL         string `json:"base_url"`
 	DefaultLocale   string `json:"default_locale"`
 	LoginMode       string `json:"login_mode"`
@@ -147,6 +155,7 @@ type Overview struct {
 	LiveItemsActive   int64 `json:"live_items_active"`
 	SMTPConfigured    bool  `json:"smtp_configured"`
 	BaseURLConfigured bool  `json:"base_url_configured"`
+	Users             int64 `json:"users"`
 }
 
 type DateStat struct {
