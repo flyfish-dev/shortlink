@@ -1556,6 +1556,10 @@ html[data-theme="dark"] .theme-moon .theme-icon-accent {
   border-radius: 18px;
 }
 
+.live-pool-layout > .card {
+  align-self: start;
+}
+
 .live-config-card .section-title,
 .live-entry-card .section-title,
 .item-form-card .section-title,
@@ -1742,28 +1746,38 @@ input[type="color"]::-webkit-color-swatch {
 
 .item-card-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  align-content: start;
+}
+
+.item-list-card {
+  position: sticky;
+  top: 148px;
+  height: fit-content;
+  max-height: min(52vh, 580px);
+  overflow: auto;
 }
 
 .item-card {
   display: grid;
-  grid-template-columns: 128px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-  padding: 14px;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-height: 116px;
+  padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--panel-soft);
 }
 
 .item-card-img {
-  width: 128px;
-  height: 128px;
+  width: 88px;
+  height: 88px;
   display: grid;
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 12px;
   background: #fff;
   color: var(--muted);
   font-size: 12px;
@@ -1779,7 +1793,7 @@ input[type="color"]::-webkit-color-swatch {
 .item-card-main {
   min-width: 0;
   display: grid;
-  gap: 8px;
+  gap: 5px;
 }
 
 .item-card-head {
@@ -1795,7 +1809,7 @@ input[type="color"]::-webkit-color-swatch {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.35;
 }
 
@@ -1808,38 +1822,53 @@ input[type="color"]::-webkit-color-swatch {
   white-space: normal;
   word-break: break-all;
   border-radius: 10px;
-  padding: 7px 9px;
+  padding: 6px 8px;
   background: var(--panel);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.item-card-subline {
+  font-size: 12px;
+}
+
+.item-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 2px;
 }
 
 .item-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 720;
 }
 
 .item-card-meta span {
-  padding: 5px 8px;
+  padding: 4px 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--panel);
 }
 
 .item-card-actions {
-  grid-column: 2;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-start;
-  padding-top: 4px;
 }
 
 .item-card-actions button {
-  min-height: 36px;
+  min-height: 32px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  font-size: 12px;
 }
 
 .publish-layout {
@@ -1891,6 +1920,11 @@ html[data-theme="dark"] .live-tabs {
 
   .live-pool-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .item-list-card {
+    position: static;
+    max-height: none;
   }
 
   .qr-designer-grid,
