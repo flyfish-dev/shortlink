@@ -298,7 +298,7 @@ func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
 		return "", err
 	}
 	if v.Valid {
-		return v.String
+		return v.String, nil
 	}
 	return "", nil
 }
