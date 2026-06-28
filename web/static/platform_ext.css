@@ -1,0 +1,23 @@
+.qr-style-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--surface-soft);
+  display: grid;
+  gap: 14px;
+}
+.qr-preview { display: flex; align-items: center; gap: 10px; min-height: 76px; }
+.qr-preview-box {
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+[hidden].admin-only { display: none !important; }
+@media (max-width: 720px) {
+  .qr-style-card { padding: 14px; }
+  .qr-preview-box { width: 64px; height: 64px; border-radius: 16px; }
+}
