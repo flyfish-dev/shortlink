@@ -90,10 +90,17 @@ func (s *Server) apiExtUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &p) {
 		return
 	}
-	st := model.SystemSettings{Installed: true, AppName: strings.TrimSpace(p.AppName), BaseURL: strings.TrimRight(strings.TrimSpace(p.BaseURL), "/"), DefaultLocale: strings.TrimSpace(p.DefaultLocale), LoginMode: strings.TrimSpace(p.LoginMode), SMTPEnabled: p.SMTPEnabled, SMTPHost: strings.TrimSpace(p.SMTPHost), SMTPPort: p.SMTPPort, SMTPSecurity: strings.TrimSpace(p.SMTPSecurity), SMTPUsername: strings.TrimSpace(p.SMTPUsername), SMTPFrom: strings.TrimSpace(p.SMTPFrom)}
+	st := model.SystemSettings{Installed: true, AppName: strings.TrimSpace(p.AppName), AppNameZH: strings.TrimSpace(p.AppNameZH), AppNameEN: strings.TrimSpace(p.AppNameEN), BaseURL: strings.TrimRight(strings.TrimSpace(p.BaseURL), "/"), DefaultLocale: strings.TrimSpace(p.DefaultLocale), LoginMode: strings.TrimSpace(p.LoginMode), SMTPEnabled: p.SMTPEnabled, SMTPHost: strings.TrimSpace(p.SMTPHost), SMTPPort: p.SMTPPort, SMTPSecurity: strings.TrimSpace(p.SMTPSecurity), SMTPUsername: strings.TrimSpace(p.SMTPUsername), SMTPFrom: strings.TrimSpace(p.SMTPFrom)}
 	if st.AppName == "" {
-		st.AppName = "AI短链平台"
+		st.AppName = st.AppNameZH
 	}
+	if st.AppNameZH == "" {
+		st.AppNameZH = firstNonEmpty(st.AppName, "AI短链平台")
+	}
+	if st.AppNameEN == "" {
+		st.AppNameEN = firstNonEmpty(st.AppName, "AI Shortlink")
+	}
+	st.AppName = st.AppNameZH
 	if st.DefaultLocale == "" {
 		st.DefaultLocale = "zh-CN"
 	}
