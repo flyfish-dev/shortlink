@@ -1546,6 +1546,10 @@ html[data-theme="dark"] .theme-moon .theme-icon-accent {
   padding-top: 16px;
 }
 
+.live-pool-layout {
+  grid-template-columns: minmax(300px, .46fr) minmax(560px, 1fr);
+}
+
 .live-base-layout .card,
 .live-pool-layout .card,
 .publish-link-card {
@@ -1577,6 +1581,35 @@ html[data-theme="dark"] .theme-moon .theme-icon-accent {
 
 .qr-designer-controls .field {
   margin: 0 0 12px;
+}
+
+.qr-logo-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  gap: 10px;
+  align-items: end;
+}
+
+.qr-logo-thumb {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 12px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.qr-logo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
 }
 
 .file-field input[type="file"] {
@@ -1714,23 +1747,23 @@ input[type="color"]::-webkit-color-swatch {
 
 .item-card {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: center;
-  padding: 12px;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--panel-soft);
 }
 
 .item-card-img {
-  width: 96px;
-  height: 96px;
+  width: 128px;
+  height: 128px;
   display: grid;
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 16px;
   background: #fff;
   color: var(--muted);
   font-size: 12px;
@@ -1745,13 +1778,16 @@ input[type="color"]::-webkit-color-swatch {
 
 .item-card-main {
   min-width: 0;
+  display: grid;
+  gap: 8px;
 }
 
 .item-card-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .item-card-head strong {
@@ -1759,27 +1795,51 @@ input[type="color"]::-webkit-color-swatch {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 15px;
+  line-height: 1.35;
 }
 
 .item-card-main p {
-  margin: 4px 0 0;
+  margin: 0;
+}
+
+.item-card-main .copy {
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-all;
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: var(--panel);
 }
 
 .item-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 2px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 720;
 }
 
+.item-card-meta span {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+}
+
 .item-card-actions {
+  grid-column: 2;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+.item-card-actions button {
+  min-height: 36px;
 }
 
 .publish-layout {

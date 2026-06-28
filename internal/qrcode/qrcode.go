@@ -12,12 +12,13 @@ import (
 
 // Options controls the visual style of the generated QR SVG.
 type Options struct {
-	Scale      int
-	Border     int
-	Foreground string
-	Background string
-	Shape      string // classic, rounded, dots
-	LogoURL    string
+	Scale       int
+	Border      int
+	Foreground  string
+	Background  string
+	Shape       string // classic, rounded, dots
+	LogoURL     string
+	LogoDataURI string
 }
 
 // SVG encodes text as a QR Code SVG using byte mode, error correction level L,
@@ -89,13 +90,19 @@ func StyledSVG(text string, opt Options) (string, error) {
 		}
 		b.WriteString(`"/>`)
 	}
-	if strings.TrimSpace(opt.LogoURL) != "" {
+	logoRef := strings.TrimSpace(opt.LogoDataURI)
+	if logoRef == "" {
+		logoRef = strings.TrimSpace(opt.LogoURL)
+	}
+	if logoRef != "" {
 		logoBox := max(5, qr.size/5)
 		padding := 1
 		x := (size - logoBox) / 2
 		y := (size - logoBox) / 2
+		clipID := "qr-logo-clip"
+		b.WriteString(fmt.Sprintf(`<defs><clipPath id="%s"><rect x="%d" y="%d" width="%d" height="%d" rx="0.9"/></clipPath></defs>`, clipID, x, y, logoBox, logoBox))
 		b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="%d" rx="1.2" fill="%s" stroke="%s" stroke-width="0.35"/>`, x-padding, y-padding, logoBox+padding*2, logoBox+padding*2, html.EscapeString(opt.Background), html.EscapeString(opt.Background)))
-		b.WriteString(fmt.Sprintf(`<image href="%s" x="%d" y="%d" width="%d" height="%d" preserveAspectRatio="xMidYMid meet"/>`, html.EscapeString(strings.TrimSpace(opt.LogoURL)), x, y, logoBox, logoBox))
+		b.WriteString(fmt.Sprintf(`<image href="%s" x="%d" y="%d" width="%d" height="%d" preserveAspectRatio="xMidYMid meet" clip-path="url(#%s)"/>`, html.EscapeString(logoRef), x, y, logoBox, logoBox, clipID))
 	}
 	b.WriteString(fmt.Sprintf(`<title>%s</title>`, html.EscapeString(text)))
 	b.WriteString(`</svg>`)

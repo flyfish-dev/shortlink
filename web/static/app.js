@@ -174,7 +174,10 @@ function qrDesignerHTML(prefix, cfg = {}, content = '') {
           <label class="field"><span>${tx('前景色','Foreground')}</span><input id="${prefix}QRForeground" type="color" value="${esc(fg)}"></label>
           <label class="field"><span>${tx('背景色','Background')}</span><input id="${prefix}QRBackground" type="color" value="${esc(bg)}"></label>
         </div>
-        <label class="field"><span>${tx('中心贴图','Center mark')}</span><input id="${prefix}QRLogoURL" value="${esc(logo)}" placeholder="/uploads/brand.png"></label>
+        <div class="qr-logo-row">
+          <label class="field"><span>${tx('中心贴图','Center mark')}</span><input id="${prefix}QRLogoURL" value="${esc(logo)}" placeholder="/uploads/brand.png"></label>
+          <div class="qr-logo-thumb" id="${prefix}QRLogoThumb">${logo ? `<img src="${esc(logo)}" alt="">` : `<span>${tx('贴图','Mark')}</span>`}</div>
+        </div>
         <label class="field file-field"><span>${tx('上传贴图','Upload mark')}</span><input id="${prefix}QRLogoFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
       </div>
       <div class="qr-preview-panel">
@@ -197,6 +200,8 @@ function updateQRPreview(prefix, content) {
   img.src = qrPreviewPath(content || `${baseURL}/q/preview`, cfg);
   const meta = document.getElementById(`${prefix}QRMeta`);
   if (meta) meta.textContent = `${cfg.qr_style} · ${cfg.qr_foreground} / ${cfg.qr_background}${cfg.qr_logo_url ? ' · logo' : ''}`;
+  const thumb = document.getElementById(`${prefix}QRLogoThumb`);
+  if (thumb) thumb.innerHTML = cfg.qr_logo_url ? `<img src="${esc(cfg.qr_logo_url)}" alt="">` : `<span>${tx('贴图','Mark')}</span>`;
 }
 function qrDownloadButtonsHTML(kind, code, compact = false) {
   if (!code) return '';

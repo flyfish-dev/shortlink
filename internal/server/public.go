@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"image"
@@ -17,6 +19,7 @@ import (
 	localqr "ai-shortlink/internal/qrcode"
 	"ai-shortlink/internal/store"
 	"ai-shortlink/internal/util"
+	_ "golang.org/x/image/webp"
 )
 
 func (s *Server) shortRedirect(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +199,8 @@ func (s *Server) writeStyledQRCode(w http.ResponseWriter, content, format, style
 	if format == "" {
 		format = "svg"
 	}
-	opt := localqr.Options{Scale: 10, Border: 4, Shape: style, Foreground: foreground, Background: background, LogoURL: logoURL}
+	logo := s.loadQRLogoAsset(logoURL)
+	opt := localqr.Options{Scale: 10, Border: 4, Shape: style, Foreground: foreground, Background: background, LogoURL: logoURL, LogoDataURI: logo.DataURI}
 	switch format {
 	case "svg":
 		svg, err := localqr.StyledSVG(content, opt)
@@ -208,7 +212,7 @@ func (s *Server) writeStyledQRCode(w http.ResponseWriter, content, format, style
 		w.Header().Set("Cache-Control", "public, max-age=3600")
 		_, _ = w.Write([]byte(svg))
 	case "png":
-		pngBytes, err := localqr.StyledPNG(content, opt, s.loadQRLogoImage(logoURL))
+		pngBytes, err := localqr.StyledPNG(content, opt, logo.Image)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -231,22 +235,29 @@ func parseQRPath(path, prefix string) (string, string) {
 	return strings.TrimSpace(raw), format
 }
 
-func (s *Server) loadQRLogoImage(logoURL string) image.Image {
+type qrLogoAsset struct {
+	Image   image.Image
+	DataURI string
+}
+
+func (s *Server) loadQRLogoAsset(logoURL string) qrLogoAsset {
 	logoURL = strings.TrimSpace(logoURL)
 	if logoURL == "" || !strings.HasPrefix(logoURL, "/uploads/") || strings.Contains(logoURL, "..") {
-		return nil
+		return qrLogoAsset{}
 	}
 	path := filepath.Join(s.cfg.DataDir, strings.TrimPrefix(logoURL, "/"))
-	f, err := os.Open(path)
-	if err != nil {
-		return nil
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) == 0 || len(data) > 2<<20 {
+		return qrLogoAsset{}
 	}
-	defer f.Close()
-	img, _, err := image.Decode(f)
-	if err != nil {
-		return nil
+	asset := qrLogoAsset{}
+	if img, _, err := image.Decode(bytes.NewReader(data)); err == nil {
+		asset.Image = img
 	}
-	return img
+	if contentType := http.DetectContentType(data); strings.HasPrefix(contentType, "image/") {
+		asset.DataURI = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(data)
+	}
+	return asset
 }
 
 func (s *Server) renderPublicError(w http.ResponseWriter, r *http.Request, status int, title, message string) {
