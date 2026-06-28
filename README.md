@@ -73,6 +73,13 @@
 
 Magic Link 需要在安装向导或系统设置中配置 SMTP。系统会发送 15 分钟有效的一次性登录链接。
 
+为了降低登录邮件进入垃圾箱的概率，建议：
+
+- 使用和 SMTP 账号同域或同账号的发信邮箱，例如 SMTP 账号是 `no-reply@example.com` 时，发信邮箱也使用 `no-reply@example.com`。
+- 为发信域名配置 SPF、DKIM、DMARC。使用企业邮箱、Resend、SendGrid、阿里云邮件推送等服务时，按服务商给出的 DNS 记录配置。
+- 公网域名使用 HTTPS，避免邮件正文里的登录链接长期指向 IP、`localhost` 或临时域名。
+- 自建 SMTP 时同时检查服务器反向解析（PTR/rDNS）和出站 IP 信誉。
+
 ## 快速启动
 
 ### 默认轻量启动（内置 SQLite）
