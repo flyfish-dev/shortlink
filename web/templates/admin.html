@@ -6,6 +6,7 @@
   <title>{{.AppName}} · Console</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/platform_ext.css">
 </head>
 <body>
   <div class="shell" id="app" data-base-url="{{.BaseURL}}">
@@ -52,5 +53,6 @@
 
   <template id="loadingTpl"><div class="empty" data-i18n="common.loading">Loading...</div></template>
   <script src="/assets/app.js" type="module"></script>
+  <script src="/assets/platform_ext.js"></script>
 </body>
 </html>
