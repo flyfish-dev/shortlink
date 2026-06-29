@@ -1948,3 +1948,196 @@ html[data-theme="dark"] .live-tabs {
     flex: 1 1 auto;
   }
 }
+
+/* Admin shell v10: fixed navigation, quiet top-right preferences, stable form controls */
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+select {
+  height: 44px;
+  min-height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.2;
+}
+
+textarea {
+  min-height: 88px;
+}
+
+.file-field input[type="file"] {
+  min-height: 44px;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+}
+
+.topbar h1 {
+  letter-spacing: 0;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+  min-width: max-content;
+}
+
+.top-actions > button {
+  min-height: 42px;
+}
+
+.header-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
+}
+
+.header-controls .theme-switch,
+.header-controls .lang-switch {
+  flex: none;
+}
+
+.top-actions .header-controls button {
+  width: auto;
+  flex: none;
+}
+
+button:focus:not(:focus-visible),
+.button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible,
+.button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, .38);
+  outline-offset: 2px;
+}
+
+.nav:focus-visible {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.side-foot {
+  justify-content: flex-start;
+}
+
+.logout-link {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  color: var(--text);
+}
+
+@media (min-width: 981px) {
+  .shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: var(--sidebar-w);
+    height: 100dvh;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .main {
+    min-height: 100vh;
+    margin-left: var(--sidebar-w);
+  }
+}
+
+@media (max-width: 980px) {
+  .shell {
+    display: block;
+  }
+
+  .sidebar {
+    position: sticky;
+    inset: auto;
+    top: 0;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .side-foot {
+    justify-content: flex-end;
+  }
+
+  .logout-link {
+    width: auto;
+    min-height: 38px;
+    padding: 8px 10px;
+  }
+
+  .topbar {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .top-actions {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .header-controls {
+    margin-left: auto;
+  }
+
+  .top-actions .header-controls button {
+    width: auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .top-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .header-controls {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .top-actions > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .top-actions .header-controls button {
+    width: auto;
+    min-width: 0;
+  }
+}

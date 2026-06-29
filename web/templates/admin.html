@@ -20,8 +20,6 @@
         <button class="nav admin-only" data-view="settings" data-i18n="nav.settings">Settings</button>
       </nav>
       <div class="side-foot">
-        <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="Toggle theme"></button>
-        <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
         <a class="logout-link" href="/auth/logout" data-i18n="common.logout">Logout</a>
       </div>
     </aside>
@@ -34,6 +32,10 @@
         <div class="top-actions">
           <button class="ghost" id="refreshBtn" data-i18n="common.refresh">Refresh</button>
           <button class="primary" id="createBtn">Create</button>
+          <div class="header-controls" aria-label="Global preferences">
+            <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="Toggle theme"></button>
+            <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
+          </div>
         </div>
       </header>
       <section id="content"></section>
