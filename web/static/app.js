@@ -178,7 +178,7 @@ function qrDesignerHTML(prefix, cfg = {}, content = '') {
           <label class="field"><span>${tx('中心贴图','Center mark')}</span><input id="${prefix}QRLogoURL" value="${esc(logo)}" placeholder="/uploads/brand.png"></label>
           <div class="qr-logo-thumb" id="${prefix}QRLogoThumb">${logo ? `<img src="${esc(logo)}" alt="">` : `<span>${tx('贴图','Mark')}</span>`}</div>
         </div>
-        <label class="field file-field"><span>${tx('上传贴图','Upload mark')}</span><input id="${prefix}QRLogoFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+        ${fileUploadHTML(`${prefix}QRLogoFile`, tx('上传贴图','Upload mark'), tx('PNG / JPG / WEBP','PNG / JPG / WEBP'))}
       </div>
       <div class="qr-preview-panel">
         <img id="${prefix}QRPreview" src="${esc(preview)}" alt="${tx('二维码风格预览','QR style preview')}" loading="lazy">
@@ -187,10 +187,28 @@ function qrDesignerHTML(prefix, cfg = {}, content = '') {
     </div>
   </div>`;
 }
+function fileUploadHTML(id, label, hint) {
+  return `<label class="field file-field"><span>${label}</span><span class="file-picker"><span class="file-picker-button">${tx('选择文件','Choose file')}</span><span class="file-picker-name" id="${id}Name" data-placeholder="${esc(hint)}">${esc(hint)}</span><input id="${id}" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></span></label>`;
+}
+function bindFilePickerName(input) {
+  if (!input) return;
+  const name = input.closest('.file-picker')?.querySelector('.file-picker-name');
+  if (!name) return;
+  const placeholder = name.dataset.placeholder || name.textContent;
+  input.addEventListener('change', () => {
+    name.textContent = input.files?.[0]?.name || placeholder;
+  });
+}
+function resetFilePickerName(input) {
+  const name = input?.closest('.file-picker')?.querySelector('.file-picker-name');
+  if (name) name.textContent = name.dataset.placeholder || name.textContent;
+}
 function bindQRDesigner(prefix, contentGetter) {
   const sync = () => updateQRPreview(prefix, contentGetter());
   [`${prefix}QRStyle`, `${prefix}QRForeground`, `${prefix}QRBackground`, `${prefix}QRLogoURL`].forEach(id => document.getElementById(id)?.addEventListener('input', sync));
-  document.getElementById(`${prefix}QRLogoFile`)?.addEventListener('change', e => uploadImageInto(e, `${prefix}QRLogoURL`, sync));
+  const logoFile = document.getElementById(`${prefix}QRLogoFile`);
+  bindFilePickerName(logoFile);
+  logoFile?.addEventListener('change', e => uploadImageInto(e, `${prefix}QRLogoURL`, sync));
   sync();
 }
 function updateQRPreview(prefix, content) {
@@ -429,14 +447,64 @@ function bindReviewButtons() {
   document.querySelectorAll('[data-review-item]').forEach(b => b.onclick = () => reviewResource('item', b.dataset.reviewItem, b.dataset.reviewStatus, false, b.dataset.itemIndex));
 }
 
+function actionMenuHTML(kind, row) {
+  const isShort = kind === 'short';
+  const review = reviewButtons(kind, row.id, row.approval_status, !isShort);
+  return `<details class="action-menu"><summary aria-label="${tx('更多操作','More actions')}">${tx('更多','More')}</summary><div class="action-menu-panel">
+    <div class="action-menu-section"><button class="ghost" data-stats-${kind}="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button></div>
+    <div class="action-menu-section">${qrDownloadButtonsHTML(kind, row.code, false)}</div>
+    ${review ? `<div class="action-menu-section"><div class="action-menu-title">${t('common.review')}</div>${review}</div>` : ''}
+    <div class="action-menu-section danger-section"><button class="danger" data-del-${kind}="${row.id}">${t('common.delete')}</button></div>
+  </div></details>`;
+}
+function rowActionsHTML(kind, row) {
+  const isShort = kind === 'short';
+  const url = isShort ? publicShort(row.code) : publicLive(row.code);
+  const edit = isShort
+    ? `<button class="ghost" data-edit-short="${row.id}">${t('common.edit')}</button>`
+    : `<button class="ghost" data-edit-live="${row.id}">${t('common.config')}</button>`;
+  return `<div class="row-actions">
+    <button class="ghost" data-copy="${esc(url)}">${t('common.copy')}</button>
+    ${edit}
+    ${actionMenuHTML(kind, row)}
+  </div>`;
+}
+function shortRowHTML(row) {
+  return `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicShort(row.code))}</div></td><td><div class="copy" title="${esc(row.target_url)}">${esc(row.target_url)}</div></td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td class="action-cell">${rowActionsHTML('short', row)}</td></tr>`;
+}
+function liveRowHTML(row) {
+  return `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicLive(row.code))}</div></td><td>${strategyName(row.rotation_strategy)}</td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td class="action-cell">${rowActionsHTML('live', row)}</td></tr>`;
+}
+function closeActionMenus(root = document) {
+  root.querySelectorAll('.action-menu[open]').forEach(menu => { menu.open = false; });
+}
+function bindActionMenus(root = document) {
+  root.querySelectorAll('.action-menu').forEach(menu => {
+    menu.ontoggle = () => {
+      menu.closest('tr')?.classList.toggle('row-menu-open', menu.open);
+      if (!menu.open) return;
+      root.querySelectorAll('.action-menu[open]').forEach(other => {
+        if (other !== menu) other.open = false;
+      });
+    };
+  });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.action-menu')) closeActionMenus();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeActionMenus();
+});
+
 async function renderShorts() {
   setHeader(t('page.shorts'), t('page.shortsDesc'), t('btn.newShort'), true);
   const { data } = await api('/api/admin/short-links?limit=100&q=' + encodeURIComponent(state.q || ''));
-  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('short.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card"><table><thead><tr><th>${t('short.title')}</th><th>${t('short.code')}</th><th>${t('short.target')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(row => `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicShort(row.code))}</div></td><td><div class="copy" title="${esc(row.target_url)}">${esc(row.target_url)}</div></td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td><div class="actions"><button class="ghost" data-copy="${esc(publicShort(row.code))}">${t('common.copy')}</button><button class="ghost" data-edit-short="${row.id}">${t('common.edit')}</button><button class="ghost" data-stats-short="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button>${qrDownloadButtonsHTML('short', row.code, true)}${reviewButtons('short', row.id, row.approval_status)}<button class="danger" data-del-short="${row.id}">${t('common.delete')}</button></div></td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">${t('short.empty')}</div></td></tr>`}</tbody></table></div>`;
+  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('short.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card has-row-menus"><table><thead><tr><th>${t('short.title')}</th><th>${t('short.code')}</th><th>${t('short.target')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(shortRowHTML).join('') || `<tr><td colspan="7"><div class="empty">${t('short.empty')}</div></td></tr>`}</tbody></table></div>`;
   document.getElementById('searchBtn').onclick = () => { state.q = val('q'); renderShorts(); };
   document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { state.q = val('q'); renderShorts(); } });
   bindShortActions(data);
   bindQRDownloadButtons(content);
+  bindActionMenus(content);
 }
 function bindShortActions(rows) {
   document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
@@ -472,11 +540,12 @@ async function submitShort(id) {
 async function renderLives() {
   setHeader(t('page.lives'), t('page.livesDesc'), t('btn.newLive'), true);
   const { data } = await api('/api/admin/live-qrs?limit=100&q=' + encodeURIComponent(state.q || ''));
-  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('live.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card"><table><thead><tr><th>${t('live.title')}</th><th>${t('live.link')}</th><th>${t('live.strategy')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(row => `<tr><td><strong>${esc(row.title || row.code)}</strong><br><span class="muted">${esc(row.code)}</span></td><td><div class="copy">${esc(publicLive(row.code))}</div></td><td>${strategyName(row.rotation_strategy)}</td><td><div class="badge-stack">${statusBadge(row.status)}${approvalBadge(row.approval_status)}</div></td><td>${Number(row.visit_count || 0).toLocaleString()}</td><td>${fmtDate(row.updated_at)}</td><td><div class="actions"><button class="ghost" data-copy="${esc(publicLive(row.code))}">${t('common.copy')}</button><button class="ghost" data-edit-live="${row.id}">${t('common.config')}</button><button class="ghost" data-stats-live="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button>${qrDownloadButtonsHTML('live', row.code, true)}${reviewButtons('live', row.id, row.approval_status, true)}<button class="danger" data-del-live="${row.id}">${t('common.delete')}</button></div></td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">${t('live.empty')}</div></td></tr>`}</tbody></table></div>`;
+  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('live.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card has-row-menus"><table><thead><tr><th>${t('live.title')}</th><th>${t('live.link')}</th><th>${t('live.strategy')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(liveRowHTML).join('') || `<tr><td colspan="7"><div class="empty">${t('live.empty')}</div></td></tr>`}</tbody></table></div>`;
   document.getElementById('searchBtn').onclick = () => { state.q = val('q'); renderLives(); };
   document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { state.q = val('q'); renderLives(); } });
   bindLiveActions(data);
   bindQRDownloadButtons(content);
+  bindActionMenus(content);
 }
 function strategyName(s) { return t('strategy.' + (s || 'round_robin'), s); }
 function bindLiveActions(rows) {
@@ -541,7 +610,7 @@ function liveEditorHTML(data) {
             <div class="item-image-preview" id="itImagePreview">${tx('预览','Preview')}</div>
             <div>
               <label class="field"><span>${t('live.itemImage')}</span><input id="itImage" placeholder="/uploads/... / https://..."></label>
-              <label class="field file-field"><span>${t('live.upload')}</span><input id="itFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+              ${fileUploadHTML('itFile', t('live.upload'), tx('PNG / JPG / WEBP','PNG / JPG / WEBP'))}
             </div>
           </div>
           <label class="field"><span>${t('live.itemTitle')}</span><input id="itTitle" placeholder="Group 1 / Support A"></label>
@@ -557,7 +626,9 @@ function liveEditorHTML(data) {
 }
 function bindLiveEditor() {
   document.querySelectorAll('[data-live-tab]').forEach(btn => btn.onclick = () => setLiveEditorTab(btn.dataset.liveTab));
-  document.getElementById('itFile').onchange = uploadSelectedImage;
+  const itemFile = document.getElementById('itFile');
+  bindFilePickerName(itemFile);
+  itemFile.onchange = uploadSelectedImage;
   document.getElementById('resetItem').onclick = resetItemForm;
   document.getElementById('saveDraftItem').onclick = saveDraftItem;
   document.getElementById('saveLiveBundle').onclick = () => saveLiveBundle(false);
@@ -617,7 +688,9 @@ function resetItemForm() {
   document.getElementById('itSort').value = 100;
   document.getElementById('itMax').value = 0;
   document.getElementById('itWeight').value = 1;
-  document.getElementById('itFile').value = '';
+  const itemFile = document.getElementById('itFile');
+  itemFile.value = '';
+  resetFilePickerName(itemFile);
   updateItemImagePreview();
 }
 async function uploadSelectedImage(e) {

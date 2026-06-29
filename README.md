@@ -32,7 +32,7 @@
 
 ![AI Shortlink 功能录屏](docs/assets/ai-shortlink-demo.gif)
 
-这段录屏来自本地真实实例，覆盖总览、短链管理、入口二维码定制、活码二维码池、发布下载和系统设置。生产站点：<https://s.flyfish.dev>。
+这段录屏来自本地真实实例，覆盖总览、短链列表折叠操作、入口二维码定制、活码二维码池、发布下载和系统设置。生产站点：<https://s.flyfish.dev>。
 
 ## 产品定位
 
