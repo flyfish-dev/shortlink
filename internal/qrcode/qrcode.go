@@ -8,6 +8,8 @@ import (
 	"image/color"
 	"image/png"
 	"strings"
+
+	extqrcode "github.com/skip2/go-qrcode"
 )
 
 // Options controls the visual style of the generated QR SVG.
@@ -45,7 +47,11 @@ func StyledSVG(text string, opt Options) (string, error) {
 	if shape == "" {
 		shape = "rounded"
 	}
-	qr, err := encode([]byte(text))
+	logoRef := strings.TrimSpace(opt.LogoDataURI)
+	if logoRef == "" {
+		logoRef = strings.TrimSpace(opt.LogoURL)
+	}
+	qr, err := encode(text, logoRef != "")
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +70,11 @@ func StyledSVG(text string, opt Options) (string, error) {
 		for y := 0; y < qr.size; y++ {
 			for x := 0; x < qr.size; x++ {
 				if qr.modules[y][x] {
-					b.WriteString(fmt.Sprintf(`<circle cx="%g" cy="%g" r="0.43"/>`, float64(x+opt.Border)+0.5, float64(y+opt.Border)+0.5))
+					if isFinderModule(qr.size, x, y) {
+						b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="1" height="1"/>`, x+opt.Border, y+opt.Border))
+					} else {
+						b.WriteString(fmt.Sprintf(`<circle cx="%g" cy="%g" r="0.43"/>`, float64(x+opt.Border)+0.5, float64(y+opt.Border)+0.5))
+					}
 				}
 			}
 		}
@@ -74,7 +84,11 @@ func StyledSVG(text string, opt Options) (string, error) {
 		for y := 0; y < qr.size; y++ {
 			for x := 0; x < qr.size; x++ {
 				if qr.modules[y][x] {
-					b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="1" height="1" rx="0.22"/>`, x+opt.Border, y+opt.Border))
+					rx := ` rx="0.22"`
+					if isFinderModule(qr.size, x, y) {
+						rx = ""
+					}
+					b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="1" height="1"%s/>`, x+opt.Border, y+opt.Border, rx))
 				}
 			}
 		}
@@ -90,19 +104,15 @@ func StyledSVG(text string, opt Options) (string, error) {
 		}
 		b.WriteString(`"/>`)
 	}
-	logoRef := strings.TrimSpace(opt.LogoDataURI)
-	if logoRef == "" {
-		logoRef = strings.TrimSpace(opt.LogoURL)
-	}
 	if logoRef != "" {
-		logoBox := max(5, qr.size/5)
-		padding := 1
-		x := (size - logoBox) / 2
-		y := (size - logoBox) / 2
+		logoBox := maxFloat(4, float64(qr.size)*0.16)
+		padding := 0.5
+		x := (float64(size) - logoBox) / 2
+		y := (float64(size) - logoBox) / 2
 		clipID := "qr-logo-clip"
-		b.WriteString(fmt.Sprintf(`<defs><clipPath id="%s"><rect x="%d" y="%d" width="%d" height="%d" rx="0.9"/></clipPath></defs>`, clipID, x, y, logoBox, logoBox))
-		b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="%d" height="%d" rx="1.2" fill="%s" stroke="%s" stroke-width="0.35"/>`, x-padding, y-padding, logoBox+padding*2, logoBox+padding*2, html.EscapeString(opt.Background), html.EscapeString(opt.Background)))
-		b.WriteString(fmt.Sprintf(`<image href="%s" x="%d" y="%d" width="%d" height="%d" preserveAspectRatio="xMidYMid meet" clip-path="url(#%s)"/>`, html.EscapeString(logoRef), x, y, logoBox, logoBox, clipID))
+		b.WriteString(fmt.Sprintf(`<defs><clipPath id="%s"><rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="0.75"/></clipPath></defs>`, clipID, x, y, logoBox, logoBox))
+		b.WriteString(fmt.Sprintf(`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="1" fill="%s" stroke="%s" stroke-width="0.2"/>`, x-padding, y-padding, logoBox+padding*2, logoBox+padding*2, html.EscapeString(opt.Background), html.EscapeString(opt.Background)))
+		b.WriteString(fmt.Sprintf(`<image href="%s" x="%.2f" y="%.2f" width="%.2f" height="%.2f" preserveAspectRatio="xMidYMid meet" clip-path="url(#%s)"/>`, html.EscapeString(logoRef), x, y, logoBox, logoBox, clipID))
 	}
 	b.WriteString(fmt.Sprintf(`<title>%s</title>`, html.EscapeString(text)))
 	b.WriteString(`</svg>`)
@@ -138,7 +148,8 @@ func StyledImage(text string, opt Options, logo image.Image) (image.Image, error
 	if shape == "" {
 		shape = "rounded"
 	}
-	qr, err := encode([]byte(text))
+	hasLogo := logo != nil || strings.TrimSpace(opt.LogoURL) != "" || strings.TrimSpace(opt.LogoDataURI) != ""
+	qr, err := encode(text, hasLogo)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +165,9 @@ func StyledImage(text string, opt Options, logo image.Image) (image.Image, error
 				continue
 			}
 			r := image.Rect((x+opt.Border)*opt.Scale, (y+opt.Border)*opt.Scale, (x+opt.Border+1)*opt.Scale, (y+opt.Border+1)*opt.Scale)
-			if shape == "dots" {
+			if isFinderModule(qr.size, x, y) {
+				fillRect(dst, r, fg)
+			} else if shape == "dots" {
 				fillCircle(dst, r, fg)
 			} else if shape == "rounded" {
 				fillRoundedRect(dst, r, opt.Scale/4, fg)
@@ -165,15 +178,23 @@ func StyledImage(text string, opt Options, logo image.Image) (image.Image, error
 	}
 	if logo != nil {
 		qrPx := qr.size * opt.Scale
-		logoSize := max(opt.Scale*5, int(float64(qrPx)*0.22))
-		logoSize = min(logoSize, int(float64(qrPx)*0.28))
-		pad := max(6, opt.Scale)
+		logoSize := max(opt.Scale*4, int(float64(qrPx)*0.16))
+		logoSize = min(logoSize, int(float64(qrPx)*0.18))
+		pad := max(2, opt.Scale/2)
 		box := image.Rect((px-logoSize)/2-pad, (px-logoSize)/2-pad, (px+logoSize)/2+pad, (px+logoSize)/2+pad)
-		fillRoundedRect(dst, box, max(8, opt.Scale), bg)
-		scaled := scaleNearest(logo, logoSize, logoSize)
-		drawAt(dst, scaled, image.Pt((px-logoSize)/2, (px-logoSize)/2))
+		fillRoundedRect(dst, box, max(4, opt.Scale/2), bg)
+		scaled := scaleNearestFit(logo, logoSize, logoSize)
+		drawAt(dst, scaled, image.Pt((px-scaled.Bounds().Dx())/2, (px-scaled.Bounds().Dy())/2))
 	}
 	return dst, nil
+}
+
+func isFinderModule(size, x, y int) bool {
+	inTop := y >= 0 && y < 7
+	inBottom := y >= size-7 && y < size
+	inLeft := x >= 0 && x < 7
+	inRight := x >= size-7 && x < size
+	return (inTop && inLeft) || (inTop && inRight) || (inBottom && inLeft)
 }
 
 func parseHexColor(v string, fallback color.RGBA) color.RGBA {
@@ -253,6 +274,20 @@ func scaleNearest(src image.Image, w, h int) *image.RGBA {
 	return dst
 }
 
+func scaleNearestFit(src image.Image, maxW, maxH int) *image.RGBA {
+	sb := src.Bounds()
+	if sb.Dx() <= 0 || sb.Dy() <= 0 {
+		return image.NewRGBA(image.Rect(0, 0, maxW, maxH))
+	}
+	w, h := maxW, maxH
+	if sb.Dx()*maxH > sb.Dy()*maxW {
+		h = max(1, maxW*sb.Dy()/sb.Dx())
+	} else {
+		w = max(1, maxH*sb.Dx()/sb.Dy())
+	}
+	return scaleNearest(src, w, h)
+}
+
 func drawAt(dst *image.RGBA, src image.Image, p image.Point) {
 	sb := src.Bounds()
 	for y := 0; y < sb.Dy(); y++ {
@@ -287,30 +322,23 @@ type qrCode struct {
 	modules, isFunc [][]bool
 }
 
-var dataCodewordsL = []int{0, 19, 34, 55, 80, 108}
-var eccCodewordsL = []int{0, 7, 10, 15, 20, 26}
-
-func encode(data []byte) (*qrCode, error) {
-	version := 0
-	for v := 1; v <= 5; v++ {
-		if 4+8+len(data)*8 <= dataCodewordsL[v]*8 {
-			version = v
-			break
-		}
+func encode(text string, hasLogo bool) (*qrCode, error) {
+	level := extqrcode.Medium
+	if hasLogo {
+		level = extqrcode.Highest
 	}
-	if version == 0 {
-		return nil, fmt.Errorf("QR 内容过长：当前轻量编码器支持约 100 字节以内的短链接")
+	encoded, err := extqrcode.New(text, level)
+	if err != nil {
+		return nil, err
 	}
-	size := 17 + version*4
-	q := &qrCode{version: version, size: size, modules: makeMatrix(size), isFunc: makeMatrix(size)}
-	q.drawFunctionPatterns()
-	codewords := makeDataCodewords(data, dataCodewordsL[version])
-	ecc := reedSolomonRemainder(codewords, reedSolomonDivisor(eccCodewordsL[version]))
-	all := append(codewords, ecc...)
-	q.drawCodewords(all)
-	q.applyMask0()
-	q.drawFormatBits(0) // ECL L, mask 0
-	return q, nil
+	encoded.DisableBorder = true
+	bitmap := encoded.Bitmap()
+	size := len(bitmap)
+	modules := makeMatrix(size)
+	for y := range bitmap {
+		copy(modules[y], bitmap[y])
+	}
+	return &qrCode{version: encoded.VersionNumber, size: size, modules: modules}, nil
 }
 
 func makeMatrix(size int) [][]bool {
@@ -556,6 +584,13 @@ func max(a, b int) int {
 }
 func min(a, b int) int {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxFloat(a, b float64) float64 {
+	if a > b {
 		return a
 	}
 	return b
