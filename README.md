@@ -12,6 +12,7 @@
 
 <p align="center">
   <a href="https://s.flyfish.dev"><img alt="Production" src="https://img.shields.io/badge/production-s.flyfish.dev-111827?style=for-the-badge"></a>
+  <img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0--only-5A31F4?style=for-the-badge">
   <img alt="Go" src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go&logoColor=white">
   <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-embedded-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
@@ -24,6 +25,7 @@
   · <a href="#核心能力">核心能力</a>
   · <a href="#快速启动">快速启动</a>
   · <a href="#原生二进制部署">二进制部署</a>
+  · <a href="#开源许可">开源许可</a>
 </p>
 
 ## 产品预览
@@ -38,6 +40,8 @@ AI Shortlink 是一个轻量、现代、单体部署的短链/活码平台。后
 
 - **内置嵌入式 SQLite**：默认推荐，首次启动即可安装，适合轻量部署、小团队、私有化场景。
 - **MySQL / MariaDB**：适合正式生产、多人协作和更高并发场景。
+
+项目以 **GNU Affero General Public License v3.0 only（AGPL-3.0-only）** 开源。AGPL 是面向网络服务场景的强 copyleft 协议：如果你修改并通过网络提供服务，需要向网络用户提供对应源码。
 
 ## 功能速览
 
@@ -312,3 +316,11 @@ node --check web/static/platform_ext.js
 ```
 
 提交前建议至少运行以上检查；二进制发布可使用 `make release` 生成 `dist/` 产物。
+
+## 开源许可
+
+本项目采用 [GNU Affero General Public License v3.0 only](LICENSE)（SPDX: `AGPL-3.0-only`）开源。
+
+- 修改、分发或通过网络提供本项目服务时，需要遵守 AGPL-3.0-only 的源码公开和版权告知要求。
+- 产品界面已提供 `Source Code` 入口，默认指向 <https://github.com/flyfish-dev/shortlink>，便于网络用户获取对应源码。
+- 项目版权与源码地址声明见 [NOTICE](NOTICE)。

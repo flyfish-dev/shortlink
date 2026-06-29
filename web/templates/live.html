@@ -22,6 +22,7 @@
     <a class="primary full link-button" href="{{.Item.TargetURL}}" rel="nofollow noopener">打不开时点击访问</a>
     {{end}}
     <p class="tiny">当前展示：{{.Item.Title}}</p>
+    <a class="source-link" href="https://github.com/flyfish-dev/shortlink" target="_blank" rel="license noopener">Source Code</a>
   </main>
   <script>
     const send = () => navigator.sendBeacon && navigator.sendBeacon('{{.TrackURL}}', new Blob(['{}'], {type:'application/json'}));
