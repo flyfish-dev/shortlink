@@ -1,9 +1,54 @@
-# AI短链平台
+<p align="center">
+  <img src="web/static/brand.svg" width="72" height="72" alt="AI Shortlink logo">
+</p>
 
-一个轻量、现代、单体部署的短链/活码平台。后台使用 Go，管理端为内置原生 HTML/CSS/JavaScript，无 Node 构建链、无 ORM。数据库支持两种模式：
+<h1 align="center">AI Shortlink</h1>
+
+<p align="center">
+  专业、极简、可私有化部署的短链与活码管理平台。
+  <br>
+  Production-ready short link and live QR management for teams that need control, review and analytics.
+</p>
+
+<p align="center">
+  <a href="https://s.flyfish.dev"><img alt="Production" src="https://img.shields.io/badge/production-s.flyfish.dev-111827?style=for-the-badge"></a>
+  <img alt="Go" src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-embedded-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
+  <img alt="MySQL" src="https://img.shields.io/badge/MySQL%20%2F%20MariaDB-supported-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
+</p>
+
+<p align="center">
+  <a href="https://s.flyfish.dev">生产地址</a>
+  · <a href="#产品预览">产品预览</a>
+  · <a href="#核心能力">核心能力</a>
+  · <a href="#快速启动">快速启动</a>
+  · <a href="#原生二进制部署">二进制部署</a>
+</p>
+
+## 产品预览
+
+![AI Shortlink 功能录屏](docs/assets/ai-shortlink-demo.gif)
+
+这段录屏来自本地真实实例，覆盖总览、短链管理、入口二维码定制、活码二维码池、发布下载和系统设置。生产站点：<https://s.flyfish.dev>。
+
+## 产品定位
+
+AI Shortlink 是一个轻量、现代、单体部署的短链/活码平台。后台使用 Go，管理端为内置原生 HTML/CSS/JavaScript，无 Node 构建链、无 ORM。数据库支持两种模式：
 
 - **内置嵌入式 SQLite**：默认推荐，首次启动即可安装，适合轻量部署、小团队、私有化场景。
 - **MySQL / MariaDB**：适合正式生产、多人协作和更高并发场景。
+
+## 功能速览
+
+| 模块 | 能力 |
+| --- | --- |
+| 短链管理 | 自定义短码、跳转状态、过期时间、访问上限、备用链接、审核发布、访问统计 |
+| 活码维护 | 固定入口、多二维码池、排序/权重/展示上限、轮询/随机/最少展示策略、事务化保存 |
+| 二维码定制 | classic / rounded / dots 三种样式、品牌色、中心贴图、实时预览、SVG / PNG / WEBP 下载 |
+| 运营与审核 | 短链、活码、二维码项均支持待审、通过、驳回、退回待审，适合多人协作 |
+| 登录与账户 | Magic Link、浏览器一键登录、恢复 Key、多用户与管理员角色 |
+| 部署形态 | Docker、Render、Linux amd64 单文件二进制、SQLite 或 MySQL/MariaDB |
 
 ## 核心能力
 
@@ -15,7 +60,7 @@
 - 支持 301 / 302 / 307 / 308 跳转。
 - 支持启用/停用、开始时间、过期时间、访问上限、失效备用链接。
 - 每条短链可长期复用，访问次数持续统计。
-- 自动生成短链二维码：`/qr/short/{code}.png`。
+- 自动生成短链二维码：`/qr/short/{code}.svg`、`/qr/short/{code}.png`，管理端可下载 SVG、PNG、WEBP。
 - **审核机制**：新建或修改短链后默认为待审，只有管理员审核通过后才会实际跳转。
 
 ### 活码
@@ -26,9 +71,10 @@
 - 支持上传二维码图片，或填写已有图片 URL。
 - 每张二维码支持启用/停用、开始时间、过期时间、展示上限、排序和权重。
 - 自动轮替策略：轮询、按权重随机、最少展示优先。
+- 入口二维码支持 classic、rounded、dots 三种样式、品牌色、中心贴图和实时预览。
 - 扫码后打开活码页，展示当前命中的二维码和“长按识别二维码”指引。
 - 支持无法识别时的备用目标链接按钮。
-- 自动生成活码入口二维码：`/qr/live/{code}.png`。
+- 自动生成活码入口二维码：`/qr/live/{code}.svg`、`/qr/live/{code}.png`，管理端可下载 SVG、PNG、WEBP。
 - **审核机制**：活码入口和每张二维码都需要审核通过；未通过时公开访问不会展示二维码。
 
 ### 统计
@@ -43,7 +89,7 @@
 
 - 专业品牌图标，已替换后台 Logo 与 favicon；侧栏 Logo 已做紧凑化处理，避免挤压内容区。
 - 后台布局已做桌面、平板、手机端响应式适配：移动端顶部导航、卡片式数据表、底部抽屉式弹窗、紧凑安装向导。
-- 白天/黑夜模式，右下/侧栏使用太阳/月亮图标切换。
+- 白天/黑夜模式和中英文切换集中在右上角，使用无 emoji 的双色产品图标与胶囊控件。
 - 国际化支持：中文/英文，默认可自动匹配浏览器语言，也可在系统设置里指定。
 - 首页只展示轻量账户恢复入口；恢复 Key 通过小弹窗查看和复制，不再全站冗余展示。
 - 系统设置页集中维护站点名称、公网域名、语言策略、登录模式、SMTP 参数、管理员邮箱。
@@ -216,8 +262,8 @@ COOKIE_SECURE=true
 | `/s/{code}` | 短链跳转 |
 | `/{code}` | 根路径短链兼容跳转 |
 | `/q/{code}` | 活码展示页 |
-| `/qr/short/{code}.png` | 短链二维码图 |
-| `/qr/live/{code}.png` | 活码入口二维码图 |
+| `/qr/short/{code}.{svg,png}` | 短链二维码图 |
+| `/qr/live/{code}.{svg,png}` | 活码入口二维码图 |
 | `/uploads/...` | 上传后的二维码图片 |
 | `/api/admin/...` | 管理后台 JSON API |
 
@@ -232,7 +278,7 @@ internal/dbutil/migrations/    内置 MySQL/SQLite 迁移
 internal/model/                数据模型
 internal/mysqlmini/            轻量 MySQL/MariaDB text protocol driver
 internal/sqlitecgo/            轻量 SQLite database/sql driver
-internal/qrcode/               轻量 QR SVG 编码器
+internal/qrcode/               二维码矩阵生成、样式渲染、中心贴图与解码测试
 internal/server/               HTTP 路由、API、安装、登录、公开访问页
 internal/store/                SQL 数据访问层
 internal/util/                 短码、IP、UA、时间等工具
@@ -262,6 +308,7 @@ go test ./...
 go vet ./...
 go build -o bin/ai-shortlink ./cmd/server
 node --check web/static/app.js
+node --check web/static/platform_ext.js
 ```
 
-当前交付版本已在构建环境通过以上检查，并已构建 Linux amd64 可执行文件：`bin/ai-shortlink`。
+提交前建议至少运行以上检查；二进制发布可使用 `make release` 生成 `dist/` 产物。
