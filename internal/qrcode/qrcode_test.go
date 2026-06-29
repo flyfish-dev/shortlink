@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"strings"
 	"testing"
 
 	"github.com/makiuchi-d/gozxing"
@@ -19,18 +20,52 @@ func TestStyledPNGWithCenterLogoDecodes(t *testing.T) {
 	drawRoundedTestMark(logo, image.Rect(12, 8, 84, 64), color.RGBA{37, 99, 235, 255})
 	drawRoundedTestMark(logo, image.Rect(34, 24, 62, 52), color.RGBA{255, 255, 255, 255})
 
-	pngBytes, err := StyledPNG(content, Options{
-		Scale:      10,
-		Border:     4,
-		Shape:      "rounded",
-		Foreground: "#111827",
-		Background: "#ffffff",
-		LogoURL:    "/uploads/test-logo.png",
-	}, logo)
-	if err != nil {
-		t.Fatalf("StyledPNG returned error: %v", err)
-	}
+	for _, shape := range []string{"rounded", "dots", "classic"} {
+		t.Run(shape, func(t *testing.T) {
+			pngBytes, err := StyledPNG(content, Options{
+				Scale:      10,
+				Border:     4,
+				Shape:      shape,
+				Foreground: "#111827",
+				Background: "#ffffff",
+				LogoURL:    "/uploads/test-logo.png",
+			}, logo)
+			if err != nil {
+				t.Fatalf("StyledPNG returned error: %v", err)
+			}
 
+			if got := decodeQRPNG(t, pngBytes); got != content {
+				t.Fatalf("decoded content = %q, want %q", got, content)
+			}
+		})
+	}
+}
+
+func TestClassicSVGUsesRectModulesWithLogo(t *testing.T) {
+	svg, err := StyledSVG("https://s.flyfish.dev/q/live-demo-code", Options{
+		Scale:       10,
+		Border:      4,
+		Shape:       "classic",
+		Foreground:  "#111827",
+		Background:  "#ffffff",
+		LogoDataURI: "data:image/png;base64,iVBORw0KGgo=",
+	})
+	if err != nil {
+		t.Fatalf("StyledSVG returned error: %v", err)
+	}
+	if strings.Contains(svg, "<path fill=") {
+		t.Fatalf("classic SVG should render modules as rects, got path output")
+	}
+	if !strings.Contains(svg, "<rect x=") {
+		t.Fatalf("classic SVG did not include module rects")
+	}
+	if !strings.Contains(svg, "<image href=") {
+		t.Fatalf("classic SVG did not include the center logo image")
+	}
+}
+
+func decodeQRPNG(t *testing.T, pngBytes []byte) string {
+	t.Helper()
 	img, err := png.Decode(bytes.NewReader(pngBytes))
 	if err != nil {
 		t.Fatalf("generated PNG did not decode: %v", err)
@@ -43,9 +78,7 @@ func TestStyledPNGWithCenterLogoDecodes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("generated QR with center logo did not scan: %v", err)
 	}
-	if got := result.GetText(); got != content {
-		t.Fatalf("decoded content = %q, want %q", got, content)
-	}
+	return result.GetText()
 }
 
 func drawRoundedTestMark(dst *image.RGBA, r image.Rectangle, c color.RGBA) {

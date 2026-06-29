@@ -23,9 +23,7 @@ type Options struct {
 	LogoDataURI string
 }
 
-// SVG encodes text as a QR Code SVG using byte mode, error correction level L,
-// and QR versions 1-5. This covers the platform's public short URLs while
-// keeping the project dependency-free.
+// SVG encodes text as a QR Code SVG using the default classic style.
 func SVG(text string, scale, border int) (string, error) {
 	return StyledSVG(text, Options{Scale: scale, Border: border, Foreground: "#000000", Background: "#ffffff", Shape: "classic"})
 }
@@ -94,15 +92,15 @@ func StyledSVG(text string, opt Options) (string, error) {
 		}
 		b.WriteString(`</g>`)
 	default:
-		b.WriteString(fmt.Sprintf(`<path fill="%s" d="`, html.EscapeString(opt.Foreground)))
+		b.WriteString(fmt.Sprintf(`<g fill="%s">`, html.EscapeString(opt.Foreground)))
 		for y := 0; y < qr.size; y++ {
 			for x := 0; x < qr.size; x++ {
 				if qr.modules[y][x] {
-					b.WriteString(fmt.Sprintf("M%d %dh1v1h-1z", x+opt.Border, y+opt.Border))
+					b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="1" height="1"/>`, x+opt.Border, y+opt.Border))
 				}
 			}
 		}
-		b.WriteString(`"/>`)
+		b.WriteString(`</g>`)
 	}
 	if logoRef != "" {
 		logoBox := maxFloat(4, float64(qr.size)*0.16)
