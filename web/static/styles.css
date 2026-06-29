@@ -2141,3 +2141,103 @@ a:focus-visible {
     min-width: 0;
   }
 }
+
+/* Settings v11: aligned SMTP section */
+.smtp-card {
+  gap: 18px;
+}
+
+.smtp-head {
+  align-items: flex-start;
+}
+
+.smtp-head > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.smtp-head,
+.smtp-toolbar,
+.settings-layout .smtp-grid {
+  width: 100%;
+  max-width: 1180px;
+}
+
+.smtp-head .primary {
+  min-height: 44px;
+}
+
+.smtp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-soft);
+}
+
+.smtp-enable {
+  margin: 0;
+  font-weight: 760;
+}
+
+.smtp-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.settings-layout .smtp-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.smtp-grid .field {
+  grid-column: span 6;
+}
+
+.smtp-grid .smtp-span-4 {
+  grid-column: span 4;
+}
+
+.smtp-grid .smtp-span-6 {
+  grid-column: span 6;
+}
+
+.smtp-grid .smtp-span-8 {
+  grid-column: span 8;
+}
+
+@media (max-width: 900px) {
+  .settings-layout .smtp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .smtp-grid .field,
+  .smtp-grid .smtp-span-4,
+  .smtp-grid .smtp-span-6,
+  .smtp-grid .smtp-span-8 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .smtp-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

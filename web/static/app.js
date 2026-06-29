@@ -748,7 +748,55 @@ async function renderSettings() {
   const res = await api('/api/admin/settings');
   const st = res.data || {};
   state.me.settings = st;
-  content.innerHTML = `<div class="settings-layout"><div class="card settings-card account-card"><h2>${t('settings.account')}</h2><p class="muted">${t('settings.accountDesc')}</p><label class="field"><span>${t('settings.email')}</span><input id="accountEmail" type="email" value="${esc(state.me?.account?.email || st.admin_email || '')}" placeholder="admin@example.com"></label><label class="field"><span>${t('settings.name')}</span><input id="accountName" value="${esc(state.me?.account?.name || '')}" placeholder="Admin"></label><p class="message" id="accountMsg" role="status"></p><button class="primary" id="saveAccount">${t('settings.saveAccount')}</button></div><div class="card settings-card"><div class="settings-section-head"><h2>${t('settings.system')}</h2><button class="primary" data-save-settings="1">${t('settings.saveSettings')}</button></div><p class="message" id="settingsMsg" role="status"></p><div class="form-grid editor-grid"><label class="field"><span>${t('settings.appNameZH')}</span><input id="setAppNameZH" value="${esc(st.app_name_zh || st.app_name || 'AI短链平台')}" placeholder="AI短链平台"></label><label class="field"><span>${t('settings.appNameEN')}</span><input id="setAppNameEN" value="${esc(st.app_name_en || 'AI Shortlink')}" placeholder="AI Shortlink"></label><p class="muted wide">${t('settings.brandI18nHint')}</p><label class="field"><span>${t('settings.locale')}</span><select id="setLocale"><option value="auto">${t('settings.autoLocale')}</option><option value="zh-CN">中文</option><option value="en-US">English</option></select></label><label class="field wide"><span>${t('settings.baseUrl')}</span><input id="setBaseURL" value="${esc(st.base_url || '')}" placeholder="https://s.example.com"></label><label class="field"><span>${t('settings.loginMode')}</span><select id="setLoginMode"><option value="hybrid">${t('settings.hybrid')}</option><option value="magic">${t('settings.magic')}</option><option value="one_click">${t('settings.oneClick')}</option></select></label><label class="field"><span>${t('settings.database')}</span><input value="${esc(res.database_mode || '')}" disabled></label></div></div><div class="card settings-card wide-card"><h2>${t('settings.smtp')}</h2><p class="muted">${t('settings.smtpDeliverabilityHint')}</p><label class="checkline"><input id="setSMTPEnabled" type="checkbox"> <span>${t('settings.smtpEnabled')}</span></label><div class="form-grid editor-grid"><label class="field"><span>${t('settings.smtpHost')}</span><input id="setSMTPHost" value="${esc(st.smtp_host || '')}"></label><label class="field"><span>${t('settings.smtpPort')}</span><input id="setSMTPPort" type="number" value="${Number(st.smtp_port || 465)}"></label><label class="field"><span>${t('settings.smtpSecurity')}</span><select id="setSMTPSecurity"><option value="tls">TLS/SSL</option><option value="starttls">STARTTLS</option><option value="plain">Plain</option></select></label><label class="field"><span>${t('settings.smtpUsername')}</span><input id="setSMTPUsername" value="${esc(st.smtp_username || '')}"></label><label class="field"><span>${t('settings.smtpPassword')}</span><input id="setSMTPPassword" type="password" placeholder="${t('settings.smtpPasswordHint')}"><small class="muted">${st.smtp_password_set ? t('settings.smtpSet') : t('settings.smtpUnset')}</small></label><label class="field"><span>${t('settings.smtpFrom')}</span><input id="setSMTPFrom" type="email" value="${esc(st.smtp_from || '')}"></label></div><div class="settings-actions"><button class="primary" data-save-settings="1">${t('settings.saveSettings')}</button></div></div></div>`;
+  const smtpPasswordState = st.smtp_password_set ? t('settings.smtpSet') : t('settings.smtpUnset');
+  content.innerHTML = `
+    <div class="settings-layout">
+      <div class="card settings-card account-card">
+        <h2>${t('settings.account')}</h2>
+        <p class="muted">${t('settings.accountDesc')}</p>
+        <label class="field"><span>${t('settings.email')}</span><input id="accountEmail" type="email" value="${esc(state.me?.account?.email || st.admin_email || '')}" placeholder="admin@example.com"></label>
+        <label class="field"><span>${t('settings.name')}</span><input id="accountName" value="${esc(state.me?.account?.name || '')}" placeholder="Admin"></label>
+        <p class="message" id="accountMsg" role="status"></p>
+        <button class="primary" id="saveAccount">${t('settings.saveAccount')}</button>
+      </div>
+      <div class="card settings-card">
+        <div class="settings-section-head">
+          <h2>${t('settings.system')}</h2>
+          <button class="primary" data-save-settings="1">${t('settings.saveSettings')}</button>
+        </div>
+        <p class="message" id="settingsMsg" role="status"></p>
+        <div class="form-grid editor-grid">
+          <label class="field"><span>${t('settings.appNameZH')}</span><input id="setAppNameZH" value="${esc(st.app_name_zh || st.app_name || 'AI短链平台')}" placeholder="AI短链平台"></label>
+          <label class="field"><span>${t('settings.appNameEN')}</span><input id="setAppNameEN" value="${esc(st.app_name_en || 'AI Shortlink')}" placeholder="AI Shortlink"></label>
+          <p class="muted wide">${t('settings.brandI18nHint')}</p>
+          <label class="field"><span>${t('settings.locale')}</span><select id="setLocale"><option value="auto">${t('settings.autoLocale')}</option><option value="zh-CN">中文</option><option value="en-US">English</option></select></label>
+          <label class="field wide"><span>${t('settings.baseUrl')}</span><input id="setBaseURL" value="${esc(st.base_url || '')}" placeholder="https://s.example.com"></label>
+          <label class="field"><span>${t('settings.loginMode')}</span><select id="setLoginMode"><option value="hybrid">${t('settings.hybrid')}</option><option value="magic">${t('settings.magic')}</option><option value="one_click">${t('settings.oneClick')}</option></select></label>
+          <label class="field"><span>${t('settings.database')}</span><input value="${esc(res.database_mode || '')}" disabled></label>
+        </div>
+      </div>
+      <div class="card settings-card wide-card smtp-card">
+        <div class="settings-section-head smtp-head">
+          <div>
+            <h2>${t('settings.smtp')}</h2>
+            <p class="muted">${t('settings.smtpDeliverabilityHint')}</p>
+          </div>
+          <button class="primary" data-save-settings="1">${t('settings.saveSettings')}</button>
+        </div>
+        <div class="smtp-toolbar">
+          <label class="checkline smtp-enable"><input id="setSMTPEnabled" type="checkbox"> <span>${t('settings.smtpEnabled')}</span></label>
+          <span class="smtp-state">${smtpPasswordState}</span>
+        </div>
+        <div class="form-grid editor-grid smtp-grid">
+          <label class="field smtp-span-8"><span>${t('settings.smtpHost')}</span><input id="setSMTPHost" value="${esc(st.smtp_host || '')}"></label>
+          <label class="field smtp-span-4"><span>${t('settings.smtpPort')}</span><input id="setSMTPPort" type="number" value="${Number(st.smtp_port || 465)}"></label>
+          <label class="field smtp-span-6"><span>${t('settings.smtpUsername')}</span><input id="setSMTPUsername" value="${esc(st.smtp_username || '')}"></label>
+          <label class="field smtp-span-6"><span>${t('settings.smtpFrom')}</span><input id="setSMTPFrom" type="email" value="${esc(st.smtp_from || '')}"></label>
+          <label class="field smtp-span-4"><span>${t('settings.smtpSecurity')}</span><select id="setSMTPSecurity"><option value="tls">TLS/SSL</option><option value="starttls">STARTTLS</option><option value="plain">Plain</option></select></label>
+          <label class="field smtp-span-8"><span>${t('settings.smtpPassword')}</span><input id="setSMTPPassword" type="password" placeholder="${t('settings.smtpPasswordHint')}"></label>
+        </div>
+      </div>
+    </div>`;
   document.getElementById('setLocale').value = st.default_locale || 'auto';
   document.getElementById('setLoginMode').value = st.login_mode || 'hybrid';
   document.getElementById('setSMTPSecurity').value = st.smtp_security || 'tls';
