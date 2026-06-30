@@ -51,7 +51,7 @@ AI Shortlink 是一个轻量、现代、单体部署的短链/活码平台。后
 | 活码维护 | 固定入口、多二维码池、排序/权重/展示上限、轮询/随机/最少展示策略、事务化保存 |
 | 二维码定制 | classic / rounded / dots 三种样式、品牌色、中心贴图、实时预览、SVG / PNG / WEBP 下载 |
 | 运营与审核 | 短链、活码、二维码项均支持待审、通过、驳回、退回待审，适合多人协作 |
-| 登录与账户 | Magic Link、浏览器一键登录、恢复 Key、多用户与管理员角色 |
+| 登录与账户 | Magic Link、GitHub OAuth、浏览器一键登录、恢复 Key、多用户与管理员角色 |
 | 部署形态 | Docker、Render、Linux amd64 单文件二进制、SQLite 或 MySQL/MariaDB |
 
 ## 核心能力
@@ -113,13 +113,15 @@ AI Shortlink 是一个轻量、现代、单体部署的短链/活码平台。后
 
 ### 登录方式
 
-后台支持三种登录模式：
+后台支持三种登录模式，并可额外开启 GitHub OAuth 一键登录：
 
 - **Magic Link + 浏览器一键登录**：默认推荐。公网环境优先使用邮箱 Magic Link，已绑定浏览器仍可一键进入。
 - **仅 Magic Link**：更适合公网严格访问控制。
 - **仅浏览器一键登录**：适合本地、内网或极简个人部署。
 
 保留浏览器一键登录体验：首次安装时自动绑定当前浏览器，之后同一浏览器可直接进入。更换浏览器、清理 Cookie 或令牌丢失时，可使用恢复 Key 或 Magic Link 重新绑定。
+
+GitHub OAuth 为可选启动级配置。配置 `GITHUB_CLIENT_ID` 与 `GITHUB_CLIENT_SECRET` 后，登录页会自动显示 GitHub 按钮；回调地址为 `https://你的域名/auth/github/callback`。GitHub 登录匹配已存在邮箱时复用该账户，新邮箱会创建普通用户账户，管理员权限仍需由管理员在用户管理中授予。
 
 Magic Link 需要在安装向导或系统设置中配置 SMTP。系统会发送 15 分钟有效的一次性登录链接。
 
@@ -219,6 +221,8 @@ make build
 | `COOKIE_SECURE` | `false` | HTTPS 部署时设为 `true` |
 | `SESSION_TTL_HOURS` | `87600` | 浏览器登录令牌有效期，默认约 10 年 |
 | `UPLOAD_MAX_MB` | `8` | 单张二维码图片上传大小上限 |
+| `GITHUB_CLIENT_ID` | 空 | 可选 GitHub OAuth Client ID |
+| `GITHUB_CLIENT_SECRET` | 空 | 可选 GitHub OAuth Client Secret，不要提交到代码仓库 |
 
 以下配置也仍兼容环境变量，但推荐通过安装向导/系统设置维护：
 
@@ -262,7 +266,9 @@ COOKIE_SECURE=true
 | --- | --- |
 | `/setup` | 首次安装向导 |
 | `/admin` | 管理后台 |
-| `/login` | 登录页，支持 Magic Link / 浏览器一键 / 恢复 Key |
+| `/login` | 登录页，支持 Magic Link / GitHub OAuth / 浏览器一键 / 恢复 Key |
+| `/auth/github/start` | GitHub OAuth 登录发起 |
+| `/auth/github/callback` | GitHub OAuth 回调，生产建议使用 HTTPS 域名 |
 | `/s/{code}` | 短链跳转 |
 | `/{code}` | 根路径短链兼容跳转 |
 | `/q/{code}` | 活码展示页 |

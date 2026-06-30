@@ -80,6 +80,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/auth/one-click", s.oneClickLogin)
 	mux.HandleFunc("/auth/magic/request", s.magicRequest)
 	mux.HandleFunc("/auth/magic/consume", s.magicConsume)
+	mux.HandleFunc("/auth/github/start", s.githubOAuthStart)
+	mux.HandleFunc("/auth/github/callback", s.githubOAuthCallback)
 	mux.HandleFunc("/auth/recover", s.recoverLogin)
 	mux.HandleFunc("/auth/logout", s.logout)
 

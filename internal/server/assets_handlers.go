@@ -20,11 +20,12 @@ func (s *Server) favicon(w http.ResponseWriter, r *http.Request) {
 func (s *Server) publicBootstrap(w http.ResponseWriter, r *http.Request) {
 	st := s.settings(r.Context())
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ok":            true,
-		"installed":     st.Installed,
-		"settings":      st,
-		"database_mode": s.cfg.DatabaseMode,
-		"sqlite_path":   s.cfg.SQLitePath,
-		"base_url":      s.publicBaseURL(r),
+		"ok":                  true,
+		"installed":           st.Installed,
+		"settings":            st,
+		"database_mode":       s.cfg.DatabaseMode,
+		"sqlite_path":         s.cfg.SQLitePath,
+		"base_url":            s.publicBaseURL(r),
+		"github_auth_enabled": s.githubOAuthConfigured(),
 	})
 }

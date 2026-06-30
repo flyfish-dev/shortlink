@@ -2704,6 +2704,37 @@ a:focus-visible {
   min-height: 44px;
 }
 
+.oauth-section {
+  margin: 14px 0 2px;
+}
+
+.oauth-section[hidden] {
+  display: none;
+}
+
+.github-login {
+  min-height: 44px;
+  border: 1px solid #24292f;
+  border-radius: 8px;
+  background: #24292f;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, .14);
+}
+
+.github-login:hover {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.github-login .github-source-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .login-card.auth-card .source-link {
   margin-top: 16px;
 }
@@ -2723,6 +2754,19 @@ html[data-theme="dark"] .auth-highlights span {
   border-color: #263f69;
   background: rgba(37, 99, 235, .12);
   color: #dbeafe;
+}
+
+html[data-theme="dark"] .github-login {
+  border-color: #f8fafc;
+  background: #f8fafc;
+  color: #0b1020;
+  box-shadow: 0 12px 28px rgba(255, 255, 255, .08);
+}
+
+html[data-theme="dark"] .github-login:hover {
+  border-color: #fff;
+  background: #fff;
+  color: #0b1020;
 }
 
 @media (max-width: 920px) {

@@ -989,8 +989,10 @@ func (s *Server) apiUpdateAccount(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 500, apiErr("db", friendlyDBErr(err)))
 		return
 	}
-	settings := map[string]string{"admin_email": p.Email}
-	_ = s.store().SetSettings(r.Context(), settings)
+	if acct.Role == "admin" {
+		settings := map[string]string{"admin_email": p.Email}
+		_ = s.store().SetSettings(r.Context(), settings)
+	}
 	_ = s.store().Audit(r.Context(), id, "admin_account.update", "admin_account", &acct.ID, p.Email, util.ClientIP(r, s.cfg.TrustProxy))
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "account": accountResponse(s, acct)})
 }
