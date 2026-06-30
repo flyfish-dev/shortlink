@@ -322,5 +322,5 @@ node --check web/static/platform_ext.js
 本项目采用 [GNU Affero General Public License v3.0 only](LICENSE)（SPDX: `AGPL-3.0-only`）开源。
 
 - 修改、分发或通过网络提供本项目服务时，需要遵守 AGPL-3.0-only 的源码公开和版权告知要求。
-- 产品界面已提供 `Source Code` 入口，默认指向 <https://github.com/flyfish-dev/shortlink>，便于网络用户获取对应源码。
+- 产品界面已提供标准 `GitHub` 源码入口，默认指向 <https://github.com/flyfish-dev/shortlink>，便于网络用户获取对应源码。
 - 项目版权与源码地址声明见 [NOTICE](NOTICE)。
