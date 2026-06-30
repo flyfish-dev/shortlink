@@ -56,23 +56,39 @@ func (s *Server) magicRequest(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "如果邮箱账户可用，登录链接会发送到该邮箱。"})
 		return
 	}
+	if existing, err := s.store().FindActiveMagicLoginTokenByEmail(r.Context(), acct.Email, time.Now()); err == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "duplicate": true, "retry_after_seconds": retryAfterSeconds(existing.ExpiresAt), "message": "登录链接已发送，请检查邮箱；15 分钟内无需重复发送。"})
+		return
+	} else if !errors.Is(err, store.ErrNotFound) {
+		writeJSON(w, 500, apiErr("db", err.Error()))
+		return
+	}
 	token, err := auth.RandomToken(32)
 	if err != nil {
 		writeJSON(w, 500, apiErr("crypto", err.Error()))
 		return
 	}
 	expiresAt := time.Now().Add(15 * time.Minute)
-	_, err = s.store().CreateMagicLoginToken(r.Context(), acct.ID, acct.Email, s.auth.Hash("magic:"+token), expiresAt, util.ClientIP(r, s.cfg.TrustProxy))
+	mt, err := s.store().CreateMagicLoginToken(r.Context(), acct.ID, acct.Email, s.auth.Hash("magic:"+token), expiresAt, util.ClientIP(r, s.cfg.TrustProxy))
 	if err != nil {
 		writeJSON(w, 500, apiErr("db", err.Error()))
 		return
 	}
 	link := s.publicBaseURL(r) + "/auth/magic/consume?token=" + url.QueryEscape(token)
 	if err := s.sendMagicLink(r.Context(), acct.Email, link, expiresAt); err != nil {
+		_ = s.store().DeleteMagicLoginToken(r.Context(), mt.ID)
 		writeJSON(w, 500, apiErr("smtp", err.Error()))
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "登录链接已发送，请在 15 分钟内打开。"})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "retry_after_seconds": retryAfterSeconds(expiresAt), "message": "登录链接已发送，请在 15 分钟内打开。"})
+}
+
+func retryAfterSeconds(expiresAt time.Time) int {
+	seconds := int(time.Until(expiresAt).Seconds())
+	if seconds < 1 {
+		return 1
+	}
+	return seconds
 }
 
 func emailName(email string) string {

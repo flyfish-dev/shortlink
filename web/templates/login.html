@@ -8,17 +8,33 @@
   <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
 </head>
 <body class="login-body">
-  <main class="login-card auth-card">
-    <div class="auth-tools">
-      <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="切换主题"></button>
-      <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
-    </div>
-    <img class="brand-logo login-logo" src="/assets/brand.svg" alt="">
-    <h1 id="appName">{{.AppName}}</h1>
-    <p class="muted" data-i18n="login.desc">Sign in quickly with email Magic Link. Bound browsers can still enter in one click.</p>
+  <main class="login-shell">
+    <section class="login-brand-panel" aria-labelledby="appName">
+      <img class="brand-logo login-logo" src="/assets/brand.svg" alt="">
+      <p class="login-kicker" data-i18n="login.kicker">Professional link and live QR operations</p>
+      <h1 id="appName">{{.AppName}}</h1>
+      <p class="muted" data-i18n="login.desc">Sign in quickly with email Magic Link. Bound browsers can still enter in one click.</p>
+      <div class="auth-highlights" aria-label="Product capabilities">
+        <span data-i18n="login.highlightMagic">One-time Magic Link</span>
+        <span data-i18n="login.highlightReview">Approval workflow</span>
+        <span data-i18n="login.highlightQR">Live QR operations</span>
+      </div>
+    </section>
 
-    <section class="login-section" id="magicSection">
-      <h2 data-i18n="login.magicTitle">Email Magic Link</h2>
+    <section class="login-card auth-card" aria-label="Login form">
+      <div class="auth-tools">
+        <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="切换主题"></button>
+        <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
+      </div>
+
+      <div class="login-card-head">
+        <p class="login-kicker" data-i18n="login.secureAccess">Secure access</p>
+        <h2 data-i18n="login.cardTitle">Sign in to console</h2>
+        <p class="muted" data-i18n="login.cardDesc">Use a verified email link or a trusted browser session to enter the admin console.</p>
+      </div>
+
+      <section class="login-section" id="magicSection">
+      <h3 data-i18n="login.magicTitle">Email Magic Link</h3>
       <p class="muted" id="magicHint" data-i18n="login.magicHint">Enter your email. A one-time login link valid for 15 minutes will be sent. New emails create a regular user account.</p>
       <label class="field">
         <span data-i18n="settings.email">Email</span>
@@ -47,19 +63,22 @@
       <p id="recoverMsg" class="message"></p>
     </div>
     <a class="source-link" href="https://github.com/flyfish-dev/shortlink" target="_blank" rel="license noopener">Source Code</a>
+    </section>
   </main>
   <script>
     const I18N = { en: {
+      'login.kicker':'Professional link and live QR operations','login.highlightMagic':'One-time Magic Link','login.highlightReview':'Approval workflow','login.highlightQR':'Live QR operations','login.secureAccess':'Secure access','login.cardTitle':'Sign in to console','login.cardDesc':'Use a verified email link or a trusted browser session to enter the admin console.',
       'login.desc':'Sign in quickly with email Magic Link. Bound browsers can still enter in one click.',
       'login.magicTitle':'Email Magic Link','login.magicHint':'Enter your email. A one-time login link valid for 15 minutes will be sent. New emails create a regular user account.',
       'login.sendMagic':'Send login link','login.or':'or','login.oneClick':'Enter with this browser','login.oneClickHint':'Direct access only works for a bound browser. Use Magic Link or recovery key on new devices.',
       'login.recover':'Recover access','login.recoverHint':'If cookies or device tokens are lost, paste the recovery key saved in the dashboard.','login.recoveryKey':'Recovery key','login.recoverBtn':'Login with recovery key','settings.email':'Email',
-      'msg.checking':'Checking browser token...','msg.sending':'Sending login link...','msg.binding':'Binding this browser...','msg.smtpMissing':'SMTP is not configured. Use a bound browser or recovery key.','msg.magicOnly':'System login mode is Magic Link.','msg.oneClickOnly':'System login mode is browser one-click.'
+      'msg.checking':'Checking browser token...','msg.sending':'Sending login link...','msg.sentLock':'A login link has already been sent to this email. Please check your inbox.','msg.binding':'Binding this browser...','msg.smtpMissing':'SMTP is not configured. Use a bound browser or recovery key.','msg.magicOnly':'System login mode is Magic Link.','msg.oneClickOnly':'System login mode is browser one-click.'
     }, zh: {
+      'login.kicker':'专业短链与活码运营控制台','login.highlightMagic':'一次性 Magic Link','login.highlightReview':'内容审核流程','login.highlightQR':'活码运营维护','login.secureAccess':'安全访问','login.cardTitle':'登录控制台','login.cardDesc':'使用已验证的邮箱链接，或通过可信浏览器会话进入后台。',
       'login.desc':'使用邮箱 Magic Link 快速登录；已绑定浏览器仍可一键进入。',
       'login.magicTitle':'邮箱 Magic Link','login.magicHint':'输入邮箱，系统会发送 15 分钟有效的一次性登录链接。新邮箱会创建普通用户账户。',
       'login.sendMagic':'发送登录链接','login.or':'或','login.oneClick':'使用本浏览器进入','login.oneClickHint':'仅已绑定浏览器可直接进入；新设备请使用 Magic Link 或恢复 Key。','login.recover':'恢复访问','login.recoverHint':'如果 Cookie 或设备令牌丢失，请粘贴控制台保存的恢复 Key。','login.recoveryKey':'恢复 Key','login.recoverBtn':'使用恢复 Key 登录','settings.email':'邮箱',
-      'msg.checking':'正在检查浏览器令牌...','msg.sending':'正在发送登录链接...','msg.binding':'正在绑定当前浏览器...','msg.smtpMissing':'SMTP 尚未配置。请使用已绑定浏览器或恢复 Key。','msg.magicOnly':'系统登录模式为 Magic Link。','msg.oneClickOnly':'系统登录模式为浏览器一键登录。'
+      'msg.checking':'正在检查浏览器令牌...','msg.sending':'正在发送登录链接...','msg.sentLock':'该邮箱已有登录链接，请先检查收件箱。','msg.binding':'正在绑定当前浏览器...','msg.smtpMissing':'SMTP 尚未配置。请使用已绑定浏览器或恢复 Key。','msg.magicOnly':'系统登录模式为 Magic Link。','msg.oneClickOnly':'系统登录模式为浏览器一键登录。'
     }};
     const detectLang = () => (localStorage.getItem('asl_lang') || navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
     let lang = detectLang();
@@ -82,27 +101,86 @@
     const recoverMsg = document.getElementById('recoverMsg');
     const magicBtn = document.getElementById('magicBtn');
     const magicMsg = document.getElementById('magicMsg');
+    const magicEmail = document.getElementById('magicEmail');
+    const MAGIC_LOCK_KEY = 'asl_magic_email_locks_v1';
+    let magicSending = false;
+    let magicLockTimer = 0;
+    const normalizeEmail = value => String(value || '').trim().toLowerCase();
+    const loadMagicLocks = () => {
+      try { return JSON.parse(localStorage.getItem(MAGIC_LOCK_KEY) || '{}') || {}; } catch { return {}; }
+    };
+    const saveMagicLocks = locks => localStorage.setItem(MAGIC_LOCK_KEY, JSON.stringify(locks));
+    const activeMagicLock = email => {
+      const key = normalizeEmail(email);
+      if (!key) return 0;
+      const locks = loadMagicLocks();
+      const until = Number(locks[key] || 0);
+      if (until > Date.now()) return until;
+      if (locks[key]) { delete locks[key]; saveMagicLocks(locks); }
+      return 0;
+    };
+    const rememberMagicLock = (email, seconds) => {
+      const key = normalizeEmail(email);
+      if (!key || !Number(seconds)) return;
+      const locks = loadMagicLocks();
+      locks[key] = Date.now() + Math.max(30, Number(seconds)) * 1000;
+      saveMagicLocks(locks);
+    };
+    const remainingText = until => {
+      const seconds = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    };
+    function updateMagicLockState() {
+      if (magicSending) return;
+      window.clearTimeout(magicLockTimer);
+      const until = activeMagicLock(magicEmail.value);
+      if (until) {
+        magicBtn.disabled = true;
+        magicBtn.textContent = `${t('login.sendMagic')} · ${remainingText(until)}`;
+        magicLockTimer = window.setTimeout(updateMagicLockState, 1000);
+      } else {
+        magicBtn.disabled = false;
+        magicBtn.textContent = t('login.sendMagic');
+      }
+    }
+    magicEmail.addEventListener('input', updateMagicLockState);
 
     fetch('/api/public/bootstrap').then(r => r.json()).then(data => {
       const st = data.settings || {};
       bootstrapSettings = st;
-      syncAppName();
+      if (!localStorage.getItem('asl_lang') && st.default_locale && st.default_locale !== 'auto') {
+        lang = String(st.default_locale).toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        applyLang();
+      } else {
+        syncAppName();
+      }
       if (st.login_mode === 'magic') msg.textContent = t('msg.magicOnly');
       if (st.login_mode === 'one_click') magicMsg.textContent = t('msg.oneClickOnly');
       if (!st.smtp_enabled || !st.smtp_password_set) magicMsg.textContent = t('msg.smtpMissing');
     }).catch(() => {});
 
     magicBtn.addEventListener('click', async () => {
+      const email = magicEmail.value;
+      if (activeMagicLock(email)) {
+        magicMsg.textContent = t('msg.sentLock');
+        updateMagicLockState();
+        return;
+      }
+      magicSending = true;
       magicMsg.textContent = t('msg.sending');
       magicBtn.disabled = true;
       try {
-        const res = await fetch('/auth/magic/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: document.getElementById('magicEmail').value }) });
+        const res = await fetch('/auth/magic/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.message || 'Send failed');
+        rememberMagicLock(email, data.retry_after_seconds || 900);
         magicMsg.textContent = data.message || 'OK';
       } catch (err) { magicMsg.textContent = err.message; }
-      finally { magicBtn.disabled = false; }
+      finally { magicSending = false; updateMagicLockState(); }
     });
+    updateMagicLockState();
 
     btn.addEventListener('click', async () => {
       msg.textContent = t('msg.checking');

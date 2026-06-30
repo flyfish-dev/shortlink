@@ -1188,6 +1188,11 @@ func (s *Store) FindMagicLoginTokenByHash(ctx context.Context, tokenHash string)
 	return scanMagic(row)
 }
 
+func (s *Store) FindActiveMagicLoginTokenByEmail(ctx context.Context, email string, at time.Time) (*model.MagicLoginToken, error) {
+	row := s.db.QueryRowContext(ctx, magicSelectSQL()+` WHERE LOWER(email)=LOWER(?) AND used_at IS NULL AND expires_at>? ORDER BY created_at DESC, id DESC LIMIT 1`, strings.TrimSpace(email), at)
+	return scanMagic(row)
+}
+
 func (s *Store) MarkMagicLoginTokenUsed(ctx context.Context, id int64) error {
 	res, err := s.db.ExecContext(ctx, `UPDATE magic_login_tokens SET used_at=? WHERE id=? AND used_at IS NULL`, now(), id)
 	if err != nil {
@@ -1197,6 +1202,11 @@ func (s *Store) MarkMagicLoginTokenUsed(ctx context.Context, id int64) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+func (s *Store) DeleteMagicLoginToken(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM magic_login_tokens WHERE id=?`, id)
+	return err
 }
 
 func magicSelectSQL() string {
