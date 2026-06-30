@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
-	"html"
 	"mime"
 	"mime/quotedprintable"
 	"net"
@@ -18,9 +17,22 @@ import (
 	"time"
 
 	"ai-shortlink/internal/model"
+	"ai-shortlink/internal/server/mailtpl"
 )
 
 func (s *Server) sendMagicLink(ctx context.Context, to, link string, expiresAt time.Time) error {
+	return s.sendTransactionalMail(ctx, to, func(st model.SystemSettings, from, to string) ([]byte, string, error) {
+		return buildMagicLinkMessage(st, from, to, link, expiresAt)
+	})
+}
+
+func (s *Server) sendApprovalNotificationMail(ctx context.Context, to string, n approvalNotification) error {
+	return s.sendTransactionalMail(ctx, to, func(st model.SystemSettings, from, to string) ([]byte, string, error) {
+		return buildApprovalNotificationMessage(st, from, to, n)
+	})
+}
+
+func (s *Server) sendTransactionalMail(ctx context.Context, to string, build func(model.SystemSettings, string, string) ([]byte, string, error)) error {
 	st := s.settings(ctx)
 	password := s.smtpPassword(ctx)
 	if password == "" {
@@ -33,7 +45,7 @@ func (s *Server) sendMagicLink(ctx context.Context, to, link string, expiresAt t
 	if username == "" {
 		username = from
 	}
-	msg, envelopeFrom, err := buildMagicLinkMessage(st, from, to, link, expiresAt)
+	msg, envelopeFrom, err := build(st, from, to)
 	if err != nil {
 		return err
 	}
@@ -75,7 +87,110 @@ func (s *Server) sendMagicLink(ctx context.Context, to, link string, expiresAt t
 	}
 }
 
+type transactionalEmail struct {
+	AppName string
+	Lang    string
+	Subject string
+	Text    string
+	HTML    string
+}
+
 func buildMagicLinkMessage(st model.SystemSettings, from, to, link string, expiresAt time.Time) ([]byte, string, error) {
+	lang := "zh-CN"
+	appName := firstNonEmpty(st.AppName, st.AppNameZH, st.AppNameEN, "AI短链平台")
+	subject := fmt.Sprintf("%s 登录链接", appName)
+	expText := expiresAt.Format("2006-01-02 15:04:05")
+	data := mailtpl.MagicLinkData{
+		AppName:      appName,
+		Title:        subject,
+		Intro:        fmt.Sprintf("%s 的一次性登录链接：", appName),
+		Link:         link,
+		ExpiresAt:    expText,
+		ExpiresLabel: "有效期至",
+		ButtonText:   "打开登录链接",
+		Footnote:     "此链接只能使用一次。如果不是你发起的请求，可以忽略这封邮件。",
+	}
+	if strings.HasPrefix(strings.ToLower(st.DefaultLocale), "en") {
+		lang = "en-US"
+		appName = firstNonEmpty(st.AppNameEN, st.AppName, "AI Shortlink")
+		subject = fmt.Sprintf("%s login link", appName)
+		expText = expiresAt.Format(time.RFC1123Z)
+		data = mailtpl.MagicLinkData{
+			AppName:      appName,
+			Title:        subject,
+			Intro:        fmt.Sprintf("Your one-time login link for %s:", appName),
+			Link:         link,
+			ExpiresAt:    expText,
+			ExpiresLabel: "Expires at",
+			ButtonText:   "Open login link",
+			Footnote:     "This link can be used only once. If you did not request it, you can ignore this email.",
+		}
+	}
+	return buildTransactionalMessage(st, from, to, transactionalEmail{AppName: appName, Lang: lang, Subject: subject, Text: mailtpl.MagicLinkText(data), HTML: mailtpl.MagicLinkHTML(data)})
+}
+
+func buildApprovalNotificationMessage(st model.SystemSettings, from, to string, n approvalNotification) ([]byte, string, error) {
+	isEN := strings.HasPrefix(strings.ToLower(st.DefaultLocale), "en")
+	appName := firstNonEmpty(st.AppName, st.AppNameZH, st.AppNameEN, "AI短链平台")
+	lang := "zh-CN"
+	resourceType := approvalResourceLabel(n.ResourceType, false)
+	title := firstNonEmpty(n.Title, n.Code, resourceType)
+	greeting := firstNonEmpty(n.RecipientName, "你好")
+	subject := fmt.Sprintf("%s 审核通过通知", appName)
+	statusLine := "你提交的内容已通过审核，现在可以正常访问。"
+	buttonText := "查看内容"
+	footer := "这是一封系统审核通知邮件，不包含附件或营销内容。如果你没有提交该内容，请联系系统管理员。"
+	approvedAt := approvalMailTime(n.ApprovedAt, false)
+	nextStep := "你可以在管理后台继续查看访问数据和二维码下载。"
+	rows := []mailtpl.InfoRow{
+		{Label: "类型", Value: resourceType},
+		{Label: "名称", Value: title},
+		{Label: "公开地址", Value: n.PublicURL},
+		{Label: "审核时间", Value: approvedAt},
+	}
+	if n.ParentTitle != "" {
+		rows = []mailtpl.InfoRow{
+			{Label: "类型", Value: resourceType},
+			{Label: "所属活码", Value: n.ParentTitle},
+			{Label: "名称", Value: title},
+			{Label: "活码入口", Value: n.PublicURL},
+			{Label: "审核时间", Value: approvedAt},
+		}
+	}
+	data := mailtpl.ApprovalData{AppName: appName, Title: subject, Greeting: greeting, Intro: statusLine, NextStep: nextStep, ButtonText: buttonText, ButtonURL: n.PublicURL, Rows: rows, Footnote: footer}
+	if isEN {
+		lang = "en-US"
+		appName = firstNonEmpty(st.AppNameEN, st.AppName, "AI Shortlink")
+		resourceType = approvalResourceLabel(n.ResourceType, true)
+		title = firstNonEmpty(n.Title, n.Code, resourceType)
+		greeting = firstNonEmpty(n.RecipientName, "Hello")
+		subject = fmt.Sprintf("%s approval notification", appName)
+		statusLine = "Your submitted content has been approved and is now available."
+		buttonText = "View content"
+		footer = "This is a system review notification. It has no attachments and no marketing content. If you did not submit this content, contact your administrator."
+		approvedAt = approvalMailTime(n.ApprovedAt, true)
+		nextStep = "You can continue to review analytics and QR downloads in the admin console."
+		rows = []mailtpl.InfoRow{
+			{Label: "Type", Value: resourceType},
+			{Label: "Name", Value: title},
+			{Label: "Public URL", Value: n.PublicURL},
+			{Label: "Approved at", Value: approvedAt},
+		}
+		if n.ParentTitle != "" {
+			rows = []mailtpl.InfoRow{
+				{Label: "Type", Value: resourceType},
+				{Label: "Live QR", Value: n.ParentTitle},
+				{Label: "Name", Value: title},
+				{Label: "Entry URL", Value: n.PublicURL},
+				{Label: "Approved at", Value: approvedAt},
+			}
+		}
+		data = mailtpl.ApprovalData{AppName: appName, Title: subject, Greeting: greeting, Intro: statusLine, NextStep: nextStep, ButtonText: buttonText, ButtonURL: n.PublicURL, Rows: rows, Footnote: footer}
+	}
+	return buildTransactionalMessage(st, from, to, transactionalEmail{AppName: appName, Lang: lang, Subject: subject, Text: mailtpl.ApprovalText(data), HTML: mailtpl.ApprovalHTML(data)})
+}
+
+func buildTransactionalMessage(st model.SystemSettings, from, to string, email transactionalEmail) ([]byte, string, error) {
 	fromAddr, err := parseMailAddress(from)
 	if err != nil {
 		return nil, "", fmt.Errorf("SMTP from email is invalid: %w", err)
@@ -84,38 +199,24 @@ func buildMagicLinkMessage(st model.SystemSettings, from, to, link string, expir
 	if err != nil {
 		return nil, "", fmt.Errorf("recipient email is invalid: %w", err)
 	}
-	lang := "zh-CN"
-	appName := firstNonEmpty(st.AppName, st.AppNameZH, st.AppNameEN, "AI短链平台")
-	subject := fmt.Sprintf("%s 登录链接", appName)
-	expText := expiresAt.Format("2006-01-02 15:04:05")
-	textBody := fmt.Sprintf("%s 的一次性登录链接：\r\n\r\n%s\r\n\r\n有效期至：%s\r\n此链接只能使用一次。如果不是你发起的请求，可以忽略这封邮件。\r\n", appName, link, expText)
-	htmlBody := magicLinkHTML(appName, subject, link, expText, "打开登录链接", "此链接只能使用一次。如果不是你发起的请求，可以忽略这封邮件。")
-	if strings.HasPrefix(strings.ToLower(st.DefaultLocale), "en") {
-		lang = "en-US"
-		appName = firstNonEmpty(st.AppNameEN, st.AppName, "AI Shortlink")
-		subject = fmt.Sprintf("%s login link", appName)
-		expText = expiresAt.Format(time.RFC1123Z)
-		textBody = fmt.Sprintf("Your one-time login link for %s:\r\n\r\n%s\r\n\r\nExpires at: %s\r\nThis link can be used only once. If you did not request it, you can ignore this email.\r\n", appName, link, expText)
-		htmlBody = magicLinkHTML(appName, subject, link, expText, "Open login link", "This link can be used only once. If you did not request it, you can ignore this email.")
-	}
 
-	displayFrom := mail.Address{Name: appName, Address: fromAddr.Address}
+	displayFrom := mail.Address{Name: email.AppName, Address: fromAddr.Address}
 	boundary := "asl-" + randomHex(12)
 	var b strings.Builder
 	writeMailHeader(&b, "From", displayFrom.String())
 	writeMailHeader(&b, "To", toAddr.String())
-	writeMailHeader(&b, "Subject", encodeMailSubject(subject))
+	writeMailHeader(&b, "Subject", encodeMailSubject(email.Subject))
 	writeMailHeader(&b, "Date", time.Now().Format(time.RFC1123Z))
 	writeMailHeader(&b, "Message-ID", messageID(st, fromAddr.Address))
 	writeMailHeader(&b, "MIME-Version", "1.0")
-	writeMailHeader(&b, "Content-Language", lang)
+	writeMailHeader(&b, "Content-Language", firstNonEmpty(email.Lang, "zh-CN"))
 	writeMailHeader(&b, "Auto-Submitted", "auto-generated")
 	writeMailHeader(&b, "X-Auto-Response-Suppress", "All")
 	writeMailHeader(&b, "Content-Type", fmt.Sprintf(`multipart/alternative; boundary="%s"`, boundary))
 	b.WriteString("\r\n")
 
-	writeMIMEPart(&b, boundary, "text/plain; charset=UTF-8", textBody)
-	writeMIMEPart(&b, boundary, "text/html; charset=UTF-8", htmlBody)
+	writeMIMEPart(&b, boundary, "text/plain; charset=UTF-8", email.Text)
+	writeMIMEPart(&b, boundary, "text/html; charset=UTF-8", email.HTML)
 	b.WriteString("--" + boundary + "--\r\n")
 	return []byte(b.String()), fromAddr.Address, nil
 }
@@ -143,34 +244,51 @@ func writeMIMEPart(b *strings.Builder, boundary, contentType, body string) {
 	b.WriteString("\r\n")
 	var encoded bytes.Buffer
 	qp := quotedprintable.NewWriter(&encoded)
-	_, _ = qp.Write([]byte(body))
+	_, _ = qp.Write([]byte(normalizeMailBody(body)))
 	_ = qp.Close()
 	b.Write(encoded.Bytes())
 	b.WriteString("\r\n")
 }
 
-func magicLinkHTML(appName, title, link, expiresAt, buttonText, footnote string) string {
-	safeApp := html.EscapeString(appName)
-	safeTitle := html.EscapeString(title)
-	safeLink := html.EscapeString(link)
-	safeExpires := html.EscapeString(expiresAt)
-	safeButton := html.EscapeString(buttonText)
-	safeFootnote := html.EscapeString(footnote)
-	return `<!doctype html>
-<html>
-<body style="margin:0;padding:0;background:#f6f7fb;color:#111827;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;">
-      <div style="font-size:13px;font-weight:700;color:#2563eb;margin-bottom:12px;">` + safeApp + `</div>
-      <h1 style="font-size:22px;line-height:1.3;margin:0 0 14px;color:#111827;">` + safeTitle + `</h1>
-      <p style="font-size:15px;line-height:1.7;margin:0 0 22px;color:#4b5563;">` + safeFootnote + `</p>
-      <p style="margin:0 0 22px;"><a href="` + safeLink + `" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;border-radius:6px;padding:12px 18px;font-weight:700;">` + safeButton + `</a></p>
-      <p style="font-size:13px;line-height:1.7;margin:0 0 8px;color:#6b7280;">Expires: ` + safeExpires + `</p>
-      <p style="font-size:12px;line-height:1.7;margin:0;color:#6b7280;word-break:break-all;">` + safeLink + `</p>
-    </div>
-  </div>
-</body>
-</html>`
+func normalizeMailBody(body string) string {
+	body = strings.ReplaceAll(body, "\r\n", "\n")
+	body = strings.ReplaceAll(body, "\r", "\n")
+	return strings.ReplaceAll(body, "\n", "\r\n")
+}
+
+func approvalResourceLabel(resourceType string, en bool) string {
+	switch resourceType {
+	case "short_link":
+		if en {
+			return "Short link"
+		}
+		return "短链"
+	case "live_qr":
+		if en {
+			return "Live QR"
+		}
+		return "活码"
+	case "live_qr_item":
+		if en {
+			return "Live QR item"
+		}
+		return "活码二维码"
+	default:
+		if en {
+			return "Content"
+		}
+		return "内容"
+	}
+}
+
+func approvalMailTime(t time.Time, en bool) string {
+	if t.IsZero() {
+		t = time.Now()
+	}
+	if en {
+		return t.Format(time.RFC1123Z)
+	}
+	return t.Format("2006-01-02 15:04:05 MST")
 }
 
 func messageID(st model.SystemSettings, from string) string {

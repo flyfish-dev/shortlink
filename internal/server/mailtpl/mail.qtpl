@@ -1,0 +1,73 @@
+{% package mailtpl %}
+
+Mail templates are compiled by quicktemplate. Keep product copy here instead of
+building email bodies in handlers.
+
+Generate with:
+  go run github.com/valyala/quicktemplate/qtc@v1.8.0 -dir=internal/server/mailtpl
+
+{% func MagicLinkText(d MagicLinkData) %}{%s= d.Intro %}
+
+{%s= d.Link %}
+
+{%s= d.ExpiresLabel %}: {%s= d.ExpiresAt %}
+{%s= d.Footnote %}
+{% endfunc %}
+
+{% func MagicLinkHTML(d MagicLinkData) %}<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#f6f7fb;color:#111827;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;">
+      <div style="font-size:13px;font-weight:700;color:#2563eb;margin-bottom:12px;">{%s d.AppName %}</div>
+      <h1 style="font-size:22px;line-height:1.3;margin:0 0 14px;color:#111827;">{%s d.Title %}</h1>
+      <p style="font-size:15px;line-height:1.7;margin:0 0 22px;color:#4b5563;">{%s d.Footnote %}</p>
+      <p style="margin:0 0 22px;"><a href="{%s d.Link %}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;border-radius:6px;padding:12px 18px;font-weight:700;">{%s d.ButtonText %}</a></p>
+      <p style="font-size:13px;line-height:1.7;margin:0 0 8px;color:#6b7280;">{%s d.ExpiresLabel %}: {%s d.ExpiresAt %}</p>
+      <p style="font-size:12px;line-height:1.7;margin:0;color:#6b7280;word-break:break-all;">{%s d.Link %}</p>
+    </div>
+  </div>
+</body>
+</html>
+{% endfunc %}
+
+{% func ApprovalText(d ApprovalData) %}{%s= d.Greeting %}
+
+{%s= d.Intro %}
+
+{% for _, row := range d.Rows %}
+{% if row.Value != "" %}{%s= row.Label %}: {%s= row.Value %}
+{% endif %}
+{% endfor %}
+{% if d.NextStep != "" %}
+{%s= d.NextStep %}
+
+{% endif %}
+{%s= d.Footnote %}
+{% endfunc %}
+
+{% func ApprovalHTML(d ApprovalData) %}<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#f6f7fb;color:#111827;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;">
+      <div style="font-size:13px;font-weight:700;color:#2563eb;margin-bottom:12px;">{%s d.AppName %}</div>
+      <h1 style="font-size:22px;line-height:1.3;margin:0 0 14px;color:#111827;">{%s d.Title %}</h1>
+      <p style="font-size:15px;line-height:1.7;margin:0 0 18px;color:#374151;">{%s d.Greeting %}<br>{%s d.Intro %}</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-top:1px solid #eef0f4;border-bottom:1px solid #eef0f4;margin:0 0 22px;">
+        {%= ApprovalRows(d.Rows) %}
+      </table>
+      <p style="margin:0 0 22px;"><a href="{%s d.ButtonURL %}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;border-radius:6px;padding:12px 18px;font-weight:700;">{%s d.ButtonText %}</a></p>
+      <p style="font-size:12px;line-height:1.7;margin:0;color:#6b7280;">{%s d.Footnote %}</p>
+    </div>
+  </div>
+</body>
+</html>
+{% endfunc %}
+
+{% func ApprovalRows(rows []InfoRow) %}{% for _, row := range rows %}
+{% if row.Value != "" %}
+<tr><td style="padding:8px 0;color:#6b7280;font-size:13px;vertical-align:top;width:96px;">{%s row.Label %}</td><td style="padding:8px 0;color:#111827;font-size:14px;line-height:1.6;word-break:break-word;">{%s row.Value %}</td></tr>
+{% endif %}
+{% endfor %}
+{% endfunc %}
