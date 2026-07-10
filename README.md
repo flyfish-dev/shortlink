@@ -1,317 +1,159 @@
 <p align="center">
-  <img src="web/static/brand.svg" width="72" height="72" alt="AI Shortlink logo">
+  <a href="https://s.flyfish.dev">
+    <img src="web/static/brand.svg" width="76" height="76" alt="AI Shortlink logo">
+  </a>
 </p>
 
 <h1 align="center">AI Shortlink</h1>
 
 <p align="center">
-  专业、极简、可私有化部署的短链与活码管理平台。
+  <strong>让每一个公开入口，在传播之后仍然可控。</strong>
   <br>
-  Production-ready short link and live QR management for teams that need control, review and analytics.
+  Keep every shared entry point controllable after it leaves your hands.
 </p>
 
 <p align="center">
-  <a href="https://s.flyfish.dev"><img alt="Production" src="https://img.shields.io/badge/production-s.flyfish.dev-111827?style=for-the-badge"></a>
-  <img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0--only-5A31F4?style=for-the-badge">
-  <img alt="Go" src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go&logoColor=white">
-  <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white">
-  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-embedded-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
-  <img alt="MySQL" src="https://img.shields.io/badge/MySQL%20%2F%20MariaDB-supported-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
+  <a href="README.md">简体中文</a> · <a href="README.en.md">English</a>
 </p>
 
 <p align="center">
-  <a href="https://s.flyfish.dev">生产地址</a>
-  · <a href="#产品预览">产品预览</a>
+  <a href="https://github.com/flyfish-dev/shortlink/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/flyfish-dev/shortlink/ci.yml?branch=main&style=flat-square&label=CI"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0--only-5A31F4?style=flat-square"></a>
+  <img alt="Go" src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat-square&logo=go&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white">
+  <a href="https://github.com/flyfish-dev/shortlink/issues"><img alt="Issues" src="https://img.shields.io/github/issues/flyfish-dev/shortlink?style=flat-square"></a>
+  <a href="https://s.flyfish.dev"><img alt="Production" src="https://img.shields.io/badge/production-s.flyfish.dev-111827?style=flat-square"></a>
+</p>
+
+<p align="center">
+  <a href="https://s.flyfish.dev">在线体验</a>
+  · <a href="#为什么是-ai-shortlink">品牌理念</a>
   · <a href="#核心能力">核心能力</a>
-  · <a href="#快速启动">快速启动</a>
-  · <a href="#原生二进制部署">二进制部署</a>
-  · <a href="#开源许可">开源许可</a>
+  · <a href="#快速开始">快速开始</a>
+  · <a href="ROADMAP.md">开发计划</a>
+  · <a href="CONTRIBUTING.md">参与贡献</a>
 </p>
 
 ## 产品预览
 
 ![AI Shortlink 功能录屏](docs/assets/ai-shortlink-demo.gif)
 
-这段录屏来自本地真实实例，覆盖总览、短链列表折叠操作、入口二维码定制、活码二维码池、发布下载和系统设置。生产站点：<https://s.flyfish.dev>。
+录屏来自真实实例，覆盖总览、短链管理、折叠操作、活码二维码池、品牌二维码定制、多格式下载和系统设置。可直接访问 [s.flyfish.dev](https://s.flyfish.dev) 体验当前生产版本。
 
-## 产品定位
+## 为什么是 AI Shortlink
 
-AI Shortlink 是一个轻量、现代、单体部署的短链/活码平台。后台使用 Go，管理端为内置原生 HTML/CSS/JavaScript，无 Node 构建链、无 ORM。数据库支持两种模式：
+链接和二维码一旦被印刷、发布或转发，就很难回收；但它们背后的目标、权限和运营策略仍会变化。AI Shortlink 将短链和活码视为长期运营的数字入口，而不是一次性的转换工具。
 
-- **内置嵌入式 SQLite**：默认推荐，首次启动即可安装，适合轻量部署、小团队、私有化场景。
-- **MySQL / MariaDB**：适合正式生产、多人协作和更高并发场景。
+产品坚持四个原则：
 
-项目以 **GNU Affero General Public License v3.0 only（AGPL-3.0-only）** 开源。AGPL 是面向网络服务场景的强 copyleft 协议：如果你修改并通过网络提供服务，需要向网络用户提供对应源码。
+- **稳定入口，持续演进**：入口保持不变，目标、二维码池和分发策略可以安全调整。
+- **控制先于自动化**：所有自动化都应可预览、可确认、可撤销，并留下审计记录。
+- **边界清晰**：普通用户只管理自己创建的资源，管理员负责全局设置与审核。
+- **轻量但完整**：单体 Go 服务、内置管理端和 SQLite 可快速部署，同时保留 MySQL/MariaDB 的生产扩展路径。
 
-## 功能速览
+### “AI” 具体指什么
 
-| 模块 | 能力 |
-| --- | --- |
-| 短链管理 | 自定义短码、跳转状态、过期时间、访问上限、备用链接、审核发布、访问统计 |
-| 活码维护 | 固定入口、多二维码池、排序/权重/展示上限、轮询/随机/最少展示策略、事务化保存 |
-| 二维码定制 | classic / rounded / dots 三种样式、品牌色、中心贴图、实时预览、SVG / PNG / WEBP 下载 |
-| 运营与审核 | 短链、活码、二维码项均支持待审、通过、驳回、退回待审，适合多人协作 |
-| 登录与账户 | Magic Link、GitHub OAuth、浏览器一键登录、恢复 Key、多用户与管理员角色 |
-| 部署形态 | Docker、Render、Linux amd64 单文件二进制、SQLite 或 MySQL/MariaDB |
+[Issue #1](https://github.com/flyfish-dev/shortlink/issues/1) 提出了一个重要问题：AI Shortlink 中的 AI 是否仅仅表示“项目由 AI 编写”？答案是：**不止于开发方式，也不等于当前版本已经把所有功能 AI 化。**
+
+AI 在这里有两层含义：
+
+1. **工程方式**：项目采用人类主导、AI 协作的开发方式，加快设计、实现、测试和文档迭代；最终判断与责任始终由维护者承担。
+2. **产品方向**：逐步引入可选的大模型能力，辅助完成自然语言配置、审核信息整理、风险提示和运营洞察。
+
+当前版本聚焦可靠的链接基础设施，**默认不调用任何大模型 API，也不会把链接或用户数据发送给第三方模型服务**。未来 AI 能力将遵循显式开启、最小数据、人工确认、结果可解释、操作可审计的原则。完整阶段与边界见 [ROADMAP.md](ROADMAP.md)。
 
 ## 核心能力
 
-### 短链
+| 领域 | 能力 |
+| --- | --- |
+| 短链管理 | 自定义短码、301/302/307/308、启停与有效期、访问上限、备用链接、二维码与访问统计 |
+| 活码运营 | 固定入口、多二维码池、排序与权重、轮询/随机/最少展示策略、事务化保存 |
+| 品牌二维码 | classic / rounded / dots、前景与背景色、中心贴图、实时预览、SVG / PNG / WEBP 下载 |
+| 团队协作 | 多用户、资源所有权、管理员审核、通过后邮件通知、操作审计 |
+| 安全登录 | Magic Link、GitHub OAuth、可信浏览器一键登录、恢复 Key、账户状态控制 |
+| 数据洞察 | 近 30 日趋势、独立 IP、设备与浏览器分布、活码展示与长按识别意图 |
+| 私有部署 | Docker、Linux amd64 二进制、Render、SQLite、MySQL / MariaDB |
+| 国际化 | 中英文产品名称、界面与邮件文案，支持自动匹配浏览器语言 |
 
-- 长链接转换为短链：`/s/{code}`。
-- 支持根路径短链兼容：`/{code}`。
-- 支持自定义短码或自动生成短码。
-- 支持 301 / 302 / 307 / 308 跳转。
-- 支持启用/停用、开始时间、过期时间、访问上限、失效备用链接。
-- 每条短链可长期复用，访问次数持续统计。
-- 自动生成短链二维码：`/qr/short/{code}.svg`、`/qr/short/{code}.png`，管理端可下载 SVG、PNG、WEBP。
-- **审核机制**：新建或修改短链后默认为待审，只有管理员审核通过后才会实际跳转。
+## 快速开始
 
-### 活码
-
-- 固定入口：`/q/{code}`，入口二维码不变，后台可维护多套二维码。
-- 单弹窗 Tab 配置：基础信息、二维码组、发布确认一次性完成。
-- 后端事务保存活码基础信息、二维码新增、编辑和删除，避免部分保存成功造成配置不一致。
-- 支持上传二维码图片，或填写已有图片 URL。
-- 每张二维码支持启用/停用、开始时间、过期时间、展示上限、排序和权重。
-- 自动轮替策略：轮询、按权重随机、最少展示优先。
-- 入口二维码支持 classic、rounded、dots 三种样式、品牌色、中心贴图和实时预览。
-- 扫码后打开活码页，展示当前命中的二维码和“长按识别二维码”指引。
-- 支持无法识别时的备用目标链接按钮。
-- 自动生成活码入口二维码：`/qr/live/{code}.svg`、`/qr/live/{code}.png`，管理端可下载 SVG、PNG、WEBP。
-- **审核机制**：活码入口和每张二维码都需要审核通过；未通过时公开访问不会展示二维码。
-
-### 统计
-
-- 记录短链访问、活码展示、长按/右键识别意图事件。
-- 统计近 30 日访问量、独立 IP、按日期、设备、浏览器分布。
-- 最近访问明细包含时间、事件、状态、设备、浏览器、IP。
-
-> 微信/浏览器无法可靠回传用户是否真的完成了“识别图中二维码”。本项目会统计活码页展示，并通过 `touchstart/contextmenu/sendBeacon` 记录“长按识别意图”。如果二维码图片本身指向本平台短链，后续跳转也可以继续被统计。
-
-## 管理后台
-
-- 专业品牌图标，已替换后台 Logo 与 favicon；侧栏 Logo 已做紧凑化处理，避免挤压内容区。
-- 后台布局已做桌面、平板、手机端响应式适配：移动端顶部导航、卡片式数据表、底部抽屉式弹窗、紧凑安装向导。
-- 白天/黑夜模式和中英文切换集中在右上角，使用无 emoji 的双色产品图标与胶囊控件。
-- 国际化支持：中文/英文，默认可自动匹配浏览器语言，也可在系统设置里指定。
-- 首页只展示轻量账户恢复入口；恢复 Key 通过小弹窗查看和复制，不再全站冗余展示。
-- 系统设置页集中维护站点名称、公网域名、语言策略、登录模式、SMTP 参数、管理员邮箱。
-
-## 登录与安装
-
-### 首次进入
-
-首次访问会进入 `/setup` 安装向导，依次配置：
-
-1. 数据库：内置 SQLite 或 MySQL/MariaDB。
-2. 站点：站点名称、公网域名、语言策略。
-3. 管理员：管理员邮箱和名称。
-4. SMTP：可选配置，用于 Magic Link 登录。
-
-安装完成后会自动绑定当前浏览器，并显示恢复 Key。请立即复制保存到密码管理器。
-
-### 登录方式
-
-后台支持三种登录模式，并可额外开启 GitHub OAuth 一键登录：
-
-- **Magic Link + 浏览器一键登录**：默认推荐。公网环境优先使用邮箱 Magic Link，已绑定浏览器仍可一键进入。
-- **仅 Magic Link**：更适合公网严格访问控制。
-- **仅浏览器一键登录**：适合本地、内网或极简个人部署。
-
-保留浏览器一键登录体验：首次安装时自动绑定当前浏览器，之后同一浏览器可直接进入。更换浏览器、清理 Cookie 或令牌丢失时，可使用恢复 Key 或 Magic Link 重新绑定。
-
-GitHub OAuth 为可选启动级配置。配置 `GITHUB_CLIENT_ID` 与 `GITHUB_CLIENT_SECRET` 后，登录页会自动显示 GitHub 按钮；回调地址为 `https://你的域名/auth/github/callback`。GitHub 登录匹配已存在邮箱时复用该账户，新邮箱会创建普通用户账户，管理员权限仍需由管理员在用户管理中授予。
-
-Magic Link 需要在安装向导或系统设置中配置 SMTP。系统会发送 15 分钟有效的一次性登录链接。
-
-为了降低登录邮件进入垃圾箱的概率，建议：
-
-- 使用和 SMTP 账号同域或同账号的发信邮箱，例如 SMTP 账号是 `no-reply@example.com` 时，发信邮箱也使用 `no-reply@example.com`。
-- 为发信域名配置 SPF、DKIM、DMARC。使用企业邮箱、Resend、SendGrid、阿里云邮件推送等服务时，按服务商给出的 DNS 记录配置。
-- 公网域名使用 HTTPS，避免邮件正文里的登录链接长期指向 IP、`localhost` 或临时域名。
-- 自建 SMTP 时同时检查服务器反向解析（PTR/rDNS）和出站 IP 信誉。
-
-## 快速启动
-
-### 默认轻量启动（内置 SQLite）
+最轻量的方式是使用 Docker 和内置 SQLite：
 
 ```bash
+git clone https://github.com/flyfish-dev/shortlink.git
+cd shortlink
 cp .env.example .env
 docker compose up -d --build
 ```
 
-访问：`http://localhost:8080`，按安装向导完成配置。
+访问 `http://localhost:8080/setup`，按向导配置站点与管理员。运行数据保存在 Docker volume 中。
 
-### Render 一键部署
-
-仓库根目录包含 `render.yaml`（Docker 部署蓝图），可直接用于 Render 一键导入。
-
-1. 将仓库推送到 GitHub。
-2. 在 Render 创建 Web Service，选择该仓库。
-3. Render 会自动识别 `render.yaml`，按 `Dockerfile` 构建并部署。
-4. 使用分配域名访问 `https://<你的服务名>.onrender.com/setup`，完成安装。
-
-注意事项：
-
-- 当前默认使用嵌入式 SQLite，运行时数据会存储在 `/app/data`。
-- Render 免费实例建议为服务挂载持久化存储（Disk）到 `/app/data`，否则容器重建会丢失数据与管理员安装配置。
-- HTTPS 下请在系统设置中开启反代安全参数（`TRUST_PROXY=true`、`COOKIE_SECURE=true`）。
-
-### 使用 MySQL/MariaDB
-
-启动应用和 MariaDB：
+本地编译需要 Go 1.23+、C 编译器和 SQLite3 开发库：
 
 ```bash
-cp .env.example .env
-docker compose --profile mysql up -d --build
-```
-
-安装向导里选择 `MySQL / MariaDB`，DSN 可填写：
-
-```text
-shortlink:shortlink@tcp(db:3306)/ai_shortlink?charset=utf8mb4&parseTime=true&loc=Local
-```
-
-### 原生二进制部署
-
-生产部署目录统一为 `/opt/shortlink`。发布包包含一个内置静态资源和迁移 SQL 的单文件二进制、启动配置文件样例和 systemd 服务文件；Linux amd64 发布包默认静态链接，便于直接部署：
-
-```bash
-make release
-sudo mkdir -p /opt/shortlink
-sudo cp dist/ai-shortlink-linux-amd64/ai-shortlink dist/ai-shortlink-linux-amd64/shortlink.env.example dist/ai-shortlink-linux-amd64/ai-shortlink.service /opt/shortlink/
-cd /opt/shortlink
-sudo cp shortlink.env.example shortlink.env
-sudo chmod +x ./ai-shortlink
-./ai-shortlink
-```
-
-程序启动时会自动读取当前目录的 `shortlink.env`，也可以通过 `SHORTLINK_CONFIG=/opt/shortlink/shortlink.env` 指定配置文件。系统环境变量优先于配置文件，方便 systemd、Docker 或面板覆盖。首次启动后访问 `/setup`，安装向导会把数据库、站点、SMTP、管理员等运行时配置写入 `DATA_DIR/app-config.json`。
-
-如使用 systemd，发布包内的 `ai-shortlink.service` 已固定工作目录为 `/opt/shortlink`：
-
-```bash
-sudo cp /opt/shortlink/ai-shortlink.service /etc/systemd/system/ai-shortlink.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now ai-shortlink
-```
-
-### 本地编译运行
-
-系统需要安装 SQLite3 开发库，因为内置数据库模式使用 cgo 绑定 SQLite。
-
-```bash
+make test
 make build
 ./bin/ai-shortlink
 ```
 
-首次访问 `/setup` 完成安装。运行时配置会保存到 `DATA_DIR/app-config.json`。
+MySQL/MariaDB、GitHub OAuth、HTTPS 反向代理、systemd 和 Render 部署说明见 [部署指南](docs/DEPLOYMENT.md)。
 
-## 环境变量
-
-现在只保留少量启动级配置，绝大多数系统参数进入后台设置页维护。
-
-| 变量 | 默认值 | 说明 |
-| --- | --- | --- |
-| `APP_ADDR` | `:8080`（如未设置且存在 `PORT`，会自动使用 `PORT`） | HTTP 监听地址 |
-| `DATA_DIR` | `./data` | 数据库文件、上传图片、运行时配置存储目录 |
-| `APP_SECRET` | 自动生成并保存 | 用于 Cookie 签名、恢复 Key 加密、哈希。生产环境首次部署后不要随意更换 |
-| `TRUST_PROXY` | `false` | 反向代理后是否信任 `X-Forwarded-For` / `X-Real-IP` |
-| `COOKIE_SECURE` | `false` | HTTPS 部署时设为 `true` |
-| `SESSION_TTL_HOURS` | `87600` | 浏览器登录令牌有效期，默认约 10 年 |
-| `UPLOAD_MAX_MB` | `8` | 单张二维码图片上传大小上限 |
-| `GITHUB_CLIENT_ID` | 空 | 可选 GitHub OAuth Client ID |
-| `GITHUB_CLIENT_SECRET` | 空 | 可选 GitHub OAuth Client Secret，不要提交到代码仓库 |
-
-以下配置也仍兼容环境变量，但推荐通过安装向导/系统设置维护：
-
-- `DATABASE_MODE=embedded|mysql`
-- `SQLITE_PATH=/path/to/ai-shortlink.db`
-- `DATABASE_DSN=...`
-- `APP_NAME=...`
-- `APP_BASE_URL=https://s.example.com`
-
-## 反向代理建议
-
-Nginx 示例：
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name s.example.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-    }
-}
-```
-
-反代和 HTTPS 部署时建议：
-
-```env
-TRUST_PROXY=true
-COOKIE_SECURE=true
-```
-
-并在后台“系统设置”中把公网域名设置为 `https://s.example.com`。
-
-## 路由说明
-
-| 路由 | 说明 |
-| --- | --- |
-| `/setup` | 首次安装向导 |
-| `/admin` | 管理后台 |
-| `/login` | 登录页，支持 Magic Link / GitHub OAuth / 浏览器一键 / 恢复 Key |
-| `/auth/github/start` | GitHub OAuth 登录发起 |
-| `/auth/github/callback` | GitHub OAuth 回调，生产建议使用 HTTPS 域名 |
-| `/s/{code}` | 短链跳转 |
-| `/{code}` | 根路径短链兼容跳转 |
-| `/q/{code}` | 活码展示页 |
-| `/qr/short/{code}.{svg,png}` | 短链二维码图 |
-| `/qr/live/{code}.{svg,png}` | 活码入口二维码图 |
-| `/uploads/...` | 上传后的二维码图片 |
-| `/api/admin/...` | 管理后台 JSON API |
-
-## 项目结构
+## 系统边界
 
 ```text
-cmd/server/                    程序入口
-internal/auth/                 Cookie、浏览器标识、恢复 Key、加密/哈希
-internal/config/               启动配置与运行时配置
-internal/dbutil/               数据库连接与自动迁移
-internal/dbutil/migrations/    内置 MySQL/SQLite 迁移
-internal/model/                数据模型
-internal/mysqlmini/            轻量 MySQL/MariaDB text protocol driver
-internal/sqlitecgo/            轻量 SQLite database/sql driver
-internal/qrcode/               二维码矩阵生成、样式渲染、中心贴图与解码测试
-internal/server/               HTTP 路由、API、安装、登录、公开访问页
-internal/store/                SQL 数据访问层
-internal/util/                 短码、IP、UA、时间等工具
-migrations/                    可读 SQL 迁移文件
-web/static/                    管理后台静态资源
-web/templates/                 HTML 模板
+公开访问者 ──> /s/{code} 短链跳转
+          └──> /q/{code} 活码展示
+
+普通用户 ────> 仅查看和维护自己创建的短链、活码与统计
+管理员 ──────> 全部资源、用户、系统设置与审核
+
+SQLite / MySQL <── Go 单体服务 ──> 内置 HTML / CSS / JavaScript 管理端
 ```
 
-## 数据库表
+关键约束：
 
-核心表：
+- 普通用户的列表、详情、统计、编辑和删除均受 `owner_account_id` 限制，不能跨账户访问资源。
+- 新建或修改的短链、活码和二维码项进入待审状态；未通过审核的入口不会公开生效。
+- 二维码中心贴图会保留必要的纠错与留白，相关渲染逻辑覆盖真实解码测试。
+- Magic Link 是一次性且限时的；GitHub OAuth 只读取登录所需的用户资料和已验证邮箱。
 
-- `system_settings`：安装状态、域名、语言、登录模式、SMTP 等系统设置。
-- `short_links`：短链配置与审核状态。
-- `live_qrs`：活码入口配置与审核状态。
-- `live_qr_items`：活码下的多套二维码及审核状态。
-- `visit_logs`：访问、展示、长按识别意图事件。
-- `admin_accounts`：后台账户、邮箱、恢复 Key。
-- `admin_devices`：已绑定后台浏览器。
-- `magic_login_tokens`：Magic Link 一次性登录令牌。
-- `audit_logs`：后台操作审计。
+更完整的模块、请求流和数据边界见 [架构说明](docs/ARCHITECTURE.md) 与 [用户及权限模型](docs/USER_MANAGEMENT.md)。
 
-## 质量检查
+## AI 能力演进
+
+| 阶段 | 目标 | 状态 |
+| --- | --- | --- |
+| 可信入口基础 | 短链、活码、品牌二维码、权限、审核、统计、登录与部署 | 已交付，持续加固 |
+| AI 接入基础 | 可选模型供应商、明确的数据范围、提示词版本、调用审计与失败降级 | 规划中 |
+| 配置助手 | 将自然语言意图转换为可检查的短链/活码配置草稿，由用户确认后保存 | 规划中 |
+| 审核助手 | 汇总目标信息、给出风险信号与审核建议，默认不替代管理员决定 | 规划中 |
+| 运营洞察 | 趋势摘要、异常提醒和可追溯的优化建议 | 探索中 |
+
+路线图不是发布日期承诺。每项能力会先形成可讨论的 Issue，再进入实现；欢迎通过 [Feature request](https://github.com/flyfish-dev/shortlink/issues/new?template=feature_request.yml) 补充真实场景。
+
+## 文档导航
+
+| 文档 | 适合谁 | 内容 |
+| --- | --- | --- |
+| [部署指南](docs/DEPLOYMENT.md) | 使用者、运维 | Docker、二进制、数据库、OAuth、SMTP、HTTPS |
+| [架构说明](docs/ARCHITECTURE.md) | 开发者 | 模块边界、请求流、数据模型、关键设计决策 |
+| [用户及权限模型](docs/USER_MANAGEMENT.md) | 管理员、开发者 | 角色、资源隔离、审核与二维码样式 |
+| [开发路线图](ROADMAP.md) | 使用者、贡献者 | 产品阶段、AI 原则、近期优先级与非目标 |
+| [贡献指南](CONTRIBUTING.md) | 贡献者 | 环境搭建、分支、测试、PR 与文档要求 |
+| [安全策略](SECURITY.md) | 安全研究者 | 支持范围、漏洞报告和响应流程 |
+| [支持指南](SUPPORT.md) | 所有人 | 问题分类、提问信息与维护范围 |
+| [行为准则](CODE_OF_CONDUCT.md) | 社区参与者 | 协作标准与执行原则 |
+
+## 参与贡献
+
+建议先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，再选择合适入口：
+
+- 可复现的缺陷：[Bug report](https://github.com/flyfish-dev/shortlink/issues/new?template=bug_report.yml)
+- 产品建议与 AI 场景：[Feature request](https://github.com/flyfish-dev/shortlink/issues/new?template=feature_request.yml)
+- 使用问题：[Question](https://github.com/flyfish-dev/shortlink/issues/new?template=question.yml)
+- 安全问题：请勿公开披露，按 [SECURITY.md](SECURITY.md) 私下报告
+
+提交前至少运行：
 
 ```bash
 go test ./...
@@ -321,12 +163,8 @@ node --check web/static/app.js
 node --check web/static/platform_ext.js
 ```
 
-提交前建议至少运行以上检查；二进制发布可使用 `make release` 生成 `dist/` 产物。
-
 ## 开源许可
 
-本项目采用 [GNU Affero General Public License v3.0 only](LICENSE)（SPDX: `AGPL-3.0-only`）开源。
+AI Shortlink 采用 [GNU Affero General Public License v3.0 only](LICENSE)（SPDX: `AGPL-3.0-only`）开源。修改、分发或通过网络提供本项目服务时，需要遵守 AGPL-3.0-only 的源码公开与版权告知要求。版权和源码声明见 [NOTICE](NOTICE)。
 
-- 修改、分发或通过网络提供本项目服务时，需要遵守 AGPL-3.0-only 的源码公开和版权告知要求。
-- 产品界面已提供标准 `GitHub` 源码入口，默认指向 <https://github.com/flyfish-dev/shortlink>，便于网络用户获取对应源码。
-- 项目版权与源码地址声明见 [NOTICE](NOTICE)。
+Copyright (C) 2026 [Flyfish Dev](https://flyfish.dev)

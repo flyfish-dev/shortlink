@@ -1,0 +1,74 @@
+name: Feature request
+description: Propose a product improvement or AI-assisted workflow
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Strong proposals begin with a user problem, not an implementation. For AI features, describe the data boundary, human confirmation, failure behavior, and why a deterministic solution is insufficient.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Preflight checks
+      options:
+        - label: I searched existing Issues and the roadmap for related work.
+          required: true
+        - label: This proposal fits short-link, live-QR, review, analytics, access, or deployment operations.
+          required: true
+        - label: I have not included secrets, private URLs, or personal data.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Who has this problem, in what workflow, and what is the current cost?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior and success criteria without assuming a particular implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Example workflow
+      description: Show the shortest realistic before/after scenario.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Product area
+      options:
+        - Short links
+        - Live QR operations
+        - QR customization and export
+        - Users, ownership, and review
+        - Authentication and email
+        - Analytics
+        - AI-assisted operations
+        - Deployment and operations
+        - Internationalization and accessibility
+        - Developer experience
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Permissions, privacy, and failure boundaries
+      description: What data or roles are involved? What must happen when the feature is disabled or fails?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing workarounds or simpler approaches.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Related Issues, mockups, comparable products, or operational evidence.

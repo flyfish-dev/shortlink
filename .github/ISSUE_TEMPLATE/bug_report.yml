@@ -1,0 +1,98 @@
+name: Bug report
+description: Report a reproducible defect in AI Shortlink
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve AI Shortlink. Search existing Issues first and remove all secrets, private URLs, personal data, recovery keys, Magic Links, cookies, and OAuth/SMTP credentials.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Preflight checks
+      options:
+        - label: I searched open and closed Issues for the same problem.
+          required: true
+        - label: I reproduced this on the latest `main` commit or explained why I could not.
+          required: true
+        - label: I removed secrets and personal data from this report.
+          required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem
+      description: Describe the incorrect behavior and its user impact.
+      placeholder: A concise description of what is broken.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest reliable sequence.
+      placeholder: |
+        1. Open ...
+        2. Configure ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Docker Compose
+        - Native Linux binary / systemd
+        - Render
+        - Local development
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      options:
+        - Embedded SQLite
+        - MySQL / MariaDB
+        - Not applicable
+        - Unknown
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or build
+      description: Provide a commit hash or deployed build date.
+      placeholder: 35759fc
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, browser, viewport, reverse proxy, and other relevant context.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Drag files here after removing secrets and personal data.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Workarounds, regressions, related Issues, or suspected component.

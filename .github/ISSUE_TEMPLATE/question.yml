@@ -1,0 +1,42 @@
+name: Question
+description: Ask about setup, operation, or expected product behavior
+title: "[Question]: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read the README, deployment guide, and existing Issues first. Remove all secrets, private URLs, personal data, recovery keys, Magic Links, cookies, and OAuth/SMTP credentials.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to understand or accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried?
+      description: Include relevant documentation, commands, and sanitized results.
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Docker Compose
+        - Native Linux binary / systemd
+        - Render
+        - Local development
+        - Not deployed yet
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Commit, OS, database, browser, proxy, and other information relevant to the question.
