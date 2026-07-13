@@ -14,18 +14,18 @@ const state = { view: localStorage.getItem('asl_view') || 'dashboard', q: '', me
 
 const I18N = {
   zh: {
-    'nav.dashboard':'总览','nav.shorts':'短链','nav.lives':'活码','nav.users':'用户管理','nav.settings':'系统设置','common.refresh':'刷新','common.logout':'退出登录','common.loading':'加载中...','common.create':'新建','common.copy':'复制','common.edit':'编辑','common.config':'配置','common.stats':'统计','common.delete':'删除','common.cancel':'取消','common.save':'保存','common.close':'关闭','common.enabled':'启用','common.disabled':'停用','common.search':'搜索','common.actions':'操作','common.status':'状态','common.updated':'更新时间','common.visits':'访问','common.approve':'通过','common.reject':'驳回','common.pending':'待审','common.review':'审核','common.approved':'已通过','common.rejected':'已驳回','common.backPending':'退回待审','msg.copied':'已复制','msg.saved':'已保存，等待管理员审核后才会生效','msg.deleted':'已删除','msg.reviewed':'审核状态已更新','msg.accountSaved':'账户信息已保存','msg.settingsSaved':'系统设置已保存','msg.needNote':'请输入驳回原因（可留空）：',
-    'page.dashboard':'总览','page.dashboardDesc':'短链、活码、审核与访问数据一屏掌控。','page.shorts':'短链管理','page.shortsDesc':'把长链接转换为可复用、可统计、可控制的短链。','page.lives':'活码管理','page.livesDesc':'固定二维码入口，多套二维码自动轮替，适合微信群、客服码和活动码。','page.settings':'系统设置','page.settingsDesc':'集中维护域名、登录方式、SMTP 和管理员邮箱。','btn.newShort':'新建短链','btn.newLive':'新建活码',
-    'dash.shortLinks':'短链总数','dash.liveQRs':'活码总数','dash.liveItems':'可用二维码','dash.today':'今日访问','dash.total':'累计访问','dash.pendingShort':'待审短链','dash.pendingLive':'待审活码','dash.pendingItem':'待审二维码','dash.recoveryTitle':'账户恢复','dash.recoveryOK':'当前浏览器已保存长期登录令牌。恢复 Key 只在首页入口中查看，建议复制到密码管理器。','dash.recoveryWarn':'恢复 Key 暂不可显示，通常是 APP_SECRET 变更导致旧 Key 无法解密。可以重新生成一个新的恢复 Key。','dash.viewRecovery':'查看 / 复制恢复 Key','dash.rotateRecovery':'重新生成恢复 Key','dash.hints':'上线检查','dash.noEmail':'尚未绑定管理员邮箱。建议在系统设置里绑定，用于 Magic Link 登录。','dash.noSMTP':'SMTP 尚未配置。公网部署建议启用 Magic Link。','dash.noBase':'尚未设置公网域名。短链、活码和邮件链接会使用当前访问地址。','dash.hasPending':'有内容等待审核，未通过审核前公开访问会显示无效。','dash.shortAbility':'短链能力','dash.shortAbilityDesc':'长链接转换短链、自动跳转、有效期、访问上限、备用链接、访问统计、二维码分享。','dash.liveAbility':'活码能力','dash.liveAbilityDesc':'一个固定活码维护多套二维码，支持过期时间、展示上限、轮询/随机/最少展示策略与长按识别指引。','dash.createShort':'创建短链','dash.createLive':'创建活码',
+    'nav.operations':'运营','nav.management':'管理','nav.dashboard':'总览','nav.shorts':'短链','nav.lives':'活码','nav.users':'用户管理','nav.settings':'系统设置','common.refresh':'刷新','common.logout':'退出登录','common.loading':'加载中...','common.create':'新建','common.copy':'复制','common.edit':'编辑','common.config':'配置','common.stats':'统计','common.delete':'删除','common.cancel':'取消','common.save':'保存','common.close':'关闭','common.enabled':'启用','common.disabled':'停用','common.search':'搜索','common.globalSearch':'搜索短链、活码或输入命令…','common.actions':'操作','common.status':'状态','common.updated':'更新时间','common.visits':'访问','common.approve':'通过','common.reject':'驳回','common.pending':'待审','common.review':'审核','common.approved':'已通过','common.rejected':'已驳回','common.backPending':'退回待审','msg.copied':'已复制','msg.saved':'已保存，等待管理员审核后才会生效','msg.deleted':'已删除','msg.reviewed':'审核状态已更新','msg.accountSaved':'账户信息已保存','msg.settingsSaved':'系统设置已保存','msg.needNote':'请输入驳回原因（可留空）：',
+    'page.dashboard':'总览','page.dashboardDesc':'短链、活码、审核与访问数据一屏掌控，提升运营效率。','page.shorts':'短链管理','page.shortsDesc':'把长链接转换为可复用、可统计、可控制的短链。','page.lives':'活码管理','page.livesDesc':'固定二维码入口，多套二维码自动轮替，适合微信群、客服码和活动码。','page.settings':'系统设置','page.settingsDesc':'集中维护域名、登录方式、SMTP 和管理员邮箱。','btn.newShort':'新建短链','btn.newLive':'新建活码',
+    'dash.shortLinks':'短链总数','dash.liveQRs':'活码总数','dash.liveItems':'可用二维码','dash.today':'今日访问','dash.total':'累计访问','dash.pendingShort':'待审短链','dash.pendingLive':'待审活码','dash.pendingItem':'待审二维码','dash.recoveryTitle':'账户恢复','dash.recoveryOK':'当前浏览器已保存长期登录令牌。恢复 Key 只在首页入口中查看，建议复制到密码管理器。','dash.recoveryWarn':'恢复 Key 暂不可显示，通常是 APP_SECRET 变更导致旧 Key 无法解密。可以重新生成一个新的恢复 Key。','dash.viewRecovery':'查看 / 复制恢复 Key','dash.rotateRecovery':'重新生成恢复 Key','dash.hints':'上线检查','dash.noEmail':'尚未绑定管理员邮箱。建议在系统设置里绑定，用于 Magic Link 登录。','dash.noSMTP':'SMTP 尚未配置。公网部署建议启用 Magic Link。','dash.noBase':'尚未设置公网域名。短链、活码和邮件链接会使用当前访问地址。','dash.hasPending':'有内容等待审核，未通过审核前公开访问会显示无效。','dash.shortAbility':'短链能力','dash.shortAbilityDesc':'长链接转换短链、自动跳转、有效期、访问上限、备用链接、访问统计、二维码分享。','dash.liveAbility':'活码能力','dash.liveAbilityDesc':'一个固定活码维护多套二维码，支持过期时间、展示上限、轮询/随机/最少展示策略与长按识别指引。','dash.createShort':'创建短链','dash.createShortHint':'缩短链接并跟踪访问','dash.createLive':'创建活码','dash.createLiveHint':'生成可维护的二维码入口',
     'short.title':'标题','short.code':'短链','short.target':'原链接','short.empty':'暂无短链','short.search':'搜索短码 / 标题 / 原链接','short.qr':'二维码','short.modalNew':'新建短链','short.modalEdit':'编辑短链','short.customCode':'自定义短码','short.targetURL':'长链接 / 目标链接','short.redirect':'跳转方式','short.starts':'开始时间','short.expires':'过期时间','short.max':'访问上限（0不限）','short.fallback':'失效备用链接','short.remark':'备注','short.pendingTip':'新建或修改后会进入待审状态，审核通过前不会跳转。',
     'live.title':'标题','live.link':'活码链接','live.strategy':'策略','live.empty':'暂无活码','live.search':'搜索活码 / 标题','live.qr':'活码图','live.modalNew':'新建活码','live.modalEdit':'配置活码','live.base':'1. 基础信息','live.items':'2. 二维码组','live.publish':'3. 发布确认','live.description':'描述','live.guideTitle':'引导标题','live.fallback':'无可用二维码时备用链接','live.guideText':'引导文案','live.itemConfig':'二维码配置','live.itemHint':'可以连续添加多张二维码，最后统一保存。','live.itemTitle':'二维码标题','live.itemImage':'二维码图片','live.upload':'上传图片','live.itemTarget':'可选目标链接','live.sort':'排序','live.maxViews':'展示上限','live.weight':'权重（随机策略）','live.addItem':'加入 / 更新列表','live.clear':'清空表单','live.validity':'有效期','live.views':'展示','live.noItems':'还没有二维码。可以在左侧上传后加入列表，最后统一保存。','live.saved':'已保存','live.draft':'待新增','live.publishEntry':'发布入口','live.saveAll':'保存全部','live.saveClose':'保存并关闭','live.unsavedLink':'保存后自动生成；也可以在基础信息里填写自定义短码。','live.noCode':'还没有生成短码。点击“保存全部”后系统会自动生成活码链接。','live.approvalWarn':'当前活码或二维码尚未审核通过，公开访问不会展示二维码。','live.noItemWarn':'提示：当前没有二维码。活码访问时会走备用链接；未设置备用链接时会显示“暂无可用二维码”。',
     'settings.account':'管理员账户','settings.accountDesc':'绑定邮箱后可使用 Magic Link 登录；浏览器一键登录仍然保留。','settings.email':'邮箱','settings.name':'名称','settings.saveAccount':'保存账户','settings.system':'系统参数','settings.appName':'站点名称','settings.appNameZH':'中文站点名称','settings.appNameEN':'English site name','settings.brandI18nHint':'站点名称会按当前界面语言显示，邮件标题和公共页面也会使用对应语言。','settings.baseUrl':'公网域名','settings.locale':'默认语言','settings.autoLocale':'自动匹配浏览器','settings.loginMode':'登录模式','settings.hybrid':'Magic Link + 浏览器一键','settings.magic':'仅 Magic Link','settings.oneClick':'仅浏览器一键','settings.database':'数据库','settings.smtp':'SMTP / Magic Link','settings.smtpDeliverabilityHint':'建议使用与 SMTP 账号同域的发信邮箱，并在域名 DNS 配置 SPF、DKIM、DMARC，避免登录邮件被判定为垃圾邮件。','settings.smtpEnabled':'启用 SMTP','settings.smtpHost':'SMTP 主机','settings.smtpPort':'端口','settings.smtpSecurity':'安全协议','settings.smtpUsername':'用户名','settings.smtpPassword':'密码 / 授权码','settings.smtpPasswordHint':'留空则保持不变','settings.smtpFrom':'发信邮箱','settings.smtpSet':'密码已保存','settings.smtpUnset':'尚未保存密码','settings.saveSettings':'保存系统设置',
     'strategy.round_robin':'轮询','strategy.random':'按权重随机','strategy.least_used':'最少展示优先'
   },
   en: {
-    'nav.dashboard':'Dashboard','nav.shorts':'Short links','nav.lives':'Live QR','nav.users':'Users','nav.settings':'Settings','common.refresh':'Refresh','common.logout':'Logout','common.loading':'Loading...','common.create':'Create','common.copy':'Copy','common.edit':'Edit','common.config':'Configure','common.stats':'Stats','common.delete':'Delete','common.cancel':'Cancel','common.save':'Save','common.close':'Close','common.enabled':'Active','common.disabled':'Disabled','common.search':'Search','common.actions':'Actions','common.status':'Status','common.updated':'Updated','common.visits':'Visits','common.approve':'Approve','common.reject':'Reject','common.pending':'Pending','common.review':'Review','common.approved':'Approved','common.rejected':'Rejected','common.backPending':'Back to pending','msg.copied':'Copied','msg.saved':'Saved. It will work after admin approval.','msg.deleted':'Deleted','msg.reviewed':'Review status updated','msg.accountSaved':'Account saved','msg.settingsSaved':'Settings saved','msg.needNote':'Reject note (optional):',
-    'page.dashboard':'Dashboard','page.dashboardDesc':'Manage links, live QR, reviews and traffic from one screen.','page.shorts':'Short links','page.shortsDesc':'Turn long URLs into reusable, trackable and controllable short links.','page.lives':'Live QR','page.livesDesc':'One fixed QR entry rotates multiple QR images for groups, support or campaigns.','page.settings':'System settings','page.settingsDesc':'Manage domain, login mode, SMTP and admin email.','btn.newShort':'New short link','btn.newLive':'New live QR',
-    'dash.shortLinks':'Short links','dash.liveQRs':'Live QR','dash.liveItems':'Available QR','dash.today':'Today','dash.total':'Total visits','dash.pendingShort':'Pending links','dash.pendingLive':'Pending live QR','dash.pendingItem':'Pending QR items','dash.recoveryTitle':'Account recovery','dash.recoveryOK':'This browser has a long-lived token. View the recovery key only here and save it in a password manager.','dash.recoveryWarn':'The recovery key is not readable, usually because APP_SECRET changed. Rotate a new key.','dash.viewRecovery':'View / copy recovery key','dash.rotateRecovery':'Rotate recovery key','dash.hints':'Launch checklist','dash.noEmail':'Admin email is not bound. Bind it in settings for Magic Link login.','dash.noSMTP':'SMTP is not configured. Magic Link is recommended for public deployment.','dash.noBase':'Public domain is not set. Links and emails will use the current origin.','dash.hasPending':'Some content is pending review. Public access is invalid before approval.','dash.shortAbility':'Short link','dash.shortAbilityDesc':'URL shortening, redirects, expiry, visit limits, fallback URL, analytics and QR sharing.','dash.liveAbility':'Live QR','dash.liveAbilityDesc':'Maintain multiple QR images behind one fixed entry with expiry, limits, weighted/random rotation and guidance.','dash.createShort':'Create short link','dash.createLive':'Create live QR',
+    'nav.operations':'Operations','nav.management':'Management','nav.dashboard':'Dashboard','nav.shorts':'Short links','nav.lives':'Live QR','nav.users':'Users','nav.settings':'Settings','common.refresh':'Refresh','common.logout':'Logout','common.loading':'Loading...','common.create':'Create','common.copy':'Copy','common.edit':'Edit','common.config':'Configure','common.stats':'Stats','common.delete':'Delete','common.cancel':'Cancel','common.save':'Save','common.close':'Close','common.enabled':'Active','common.disabled':'Disabled','common.search':'Search','common.globalSearch':'Search links, live QR or enter a command…','common.actions':'Actions','common.status':'Status','common.updated':'Updated','common.visits':'Visits','common.approve':'Approve','common.reject':'Reject','common.pending':'Pending','common.review':'Review','common.approved':'Approved','common.rejected':'Rejected','common.backPending':'Back to pending','msg.copied':'Copied','msg.saved':'Saved. It will work after admin approval.','msg.deleted':'Deleted','msg.reviewed':'Review status updated','msg.accountSaved':'Account saved','msg.settingsSaved':'Settings saved','msg.needNote':'Reject note (optional):',
+    'page.dashboard':'Dashboard','page.dashboardDesc':'Manage links, live QR, reviews and traffic from one screen with less friction.','page.shorts':'Short links','page.shortsDesc':'Turn long URLs into reusable, trackable and controllable short links.','page.lives':'Live QR','page.livesDesc':'One fixed QR entry rotates multiple QR images for groups, support or campaigns.','page.settings':'System settings','page.settingsDesc':'Manage domain, login mode, SMTP and admin email.','btn.newShort':'New short link','btn.newLive':'New live QR',
+    'dash.shortLinks':'Short links','dash.liveQRs':'Live QR','dash.liveItems':'Available QR','dash.today':'Today','dash.total':'Total visits','dash.pendingShort':'Pending links','dash.pendingLive':'Pending live QR','dash.pendingItem':'Pending QR items','dash.recoveryTitle':'Account recovery','dash.recoveryOK':'This browser has a long-lived token. View the recovery key only here and save it in a password manager.','dash.recoveryWarn':'The recovery key is not readable, usually because APP_SECRET changed. Rotate a new key.','dash.viewRecovery':'View / copy recovery key','dash.rotateRecovery':'Rotate recovery key','dash.hints':'Launch checklist','dash.noEmail':'Admin email is not bound. Bind it in settings for Magic Link login.','dash.noSMTP':'SMTP is not configured. Magic Link is recommended for public deployment.','dash.noBase':'Public domain is not set. Links and emails will use the current origin.','dash.hasPending':'Some content is pending review. Public access is invalid before approval.','dash.shortAbility':'Short link','dash.shortAbilityDesc':'URL shortening, redirects, expiry, visit limits, fallback URL, analytics and QR sharing.','dash.liveAbility':'Live QR','dash.liveAbilityDesc':'Maintain multiple QR images behind one fixed entry with expiry, limits, weighted/random rotation and guidance.','dash.createShort':'Create short link','dash.createShortHint':'Shorten a destination and track it','dash.createLive':'Create live QR','dash.createLiveHint':'Maintain a reusable QR entry',
     'short.title':'Title','short.code':'Short URL','short.target':'Target URL','short.empty':'No short links','short.search':'Search code / title / target','short.qr':'QR','short.modalNew':'New short link','short.modalEdit':'Edit short link','short.customCode':'Custom code','short.targetURL':'Long / target URL','short.redirect':'Redirect type','short.starts':'Starts at','short.expires':'Expires at','short.max':'Visit limit (0 = unlimited)','short.fallback':'Fallback URL','short.remark':'Remark','short.pendingTip':'New or edited links become pending and will not redirect until approved.',
     'live.title':'Title','live.link':'Live QR link','live.strategy':'Strategy','live.empty':'No live QR','live.search':'Search live QR / title','live.qr':'QR image','live.modalNew':'New live QR','live.modalEdit':'Configure live QR','live.base':'1. Basic','live.items':'2. QR items','live.publish':'3. Publish','live.description':'Description','live.guideTitle':'Guide title','live.fallback':'Fallback when no QR is available','live.guideText':'Guide text','live.itemConfig':'QR item','live.itemHint':'Add multiple QR images and save them in one transaction.','live.itemTitle':'QR title','live.itemImage':'QR image','live.upload':'Upload image','live.itemTarget':'Optional target URL','live.sort':'Sort','live.maxViews':'View limit','live.weight':'Weight (random)','live.addItem':'Add / update list','live.clear':'Clear form','live.validity':'Validity','live.views':'Views','live.noItems':'No QR items yet. Upload and add on the left, then save all.','live.saved':'Saved','live.draft':'New draft','live.publishEntry':'Publish entry','live.saveAll':'Save all','live.saveClose':'Save and close','live.unsavedLink':'Generated after saving; or fill a custom code in Basic.','live.noCode':'No code yet. Save all to generate the public link.','live.approvalWarn':'This live QR or its items are not approved yet, so public access will not show a QR.','live.noItemWarn':'No QR items. The fallback URL will be used; if absent, visitors see an unavailable message.',
     'settings.account':'Admin account','settings.accountDesc':'After binding an email, Magic Link login is available. Browser one-click login is preserved.','settings.email':'Email','settings.name':'Name','settings.saveAccount':'Save account','settings.system':'System','settings.appName':'Site name','settings.appNameZH':'Chinese site name','settings.appNameEN':'English site name','settings.brandI18nHint':'The product name follows the current interface language, including email subjects and public pages.','settings.baseUrl':'Public domain','settings.locale':'Default language','settings.autoLocale':'Auto match browser','settings.loginMode':'Login mode','settings.hybrid':'Magic Link + browser one-click','settings.magic':'Magic Link only','settings.oneClick':'Browser one-click only','settings.database':'Database','settings.smtp':'SMTP / Magic Link','settings.smtpDeliverabilityHint':'Use a From address on the same domain as the SMTP account, and configure SPF, DKIM, and DMARC in DNS to keep login emails out of spam.','settings.smtpEnabled':'Enable SMTP','settings.smtpHost':'SMTP host','settings.smtpPort':'Port','settings.smtpSecurity':'Security','settings.smtpUsername':'Username','settings.smtpPassword':'Password / app token','settings.smtpPasswordHint':'Leave empty to keep current','settings.smtpFrom':'From email','settings.smtpSet':'Password saved','settings.smtpUnset':'No password saved','settings.saveSettings':'Save settings',
@@ -42,7 +42,7 @@ const localeCode = () => state.locale === 'zh' ? 'zh-CN' : 'en-US';
 const t = (key, fallback = '') => I18N[state.locale]?.[key] || I18N.zh[key] || fallback || key;
 const tx = (zh, en) => state.locale === 'zh' ? zh : en;
 const fmtDate = (s) => s ? new Date(s).toLocaleString(localeCode(), { hour12: false }) : '-';
-const themeToggleHTML = '<span class="theme-option theme-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="theme-icon-fill" cx="12" cy="12" r="4.4"/><path class="theme-icon-accent" d="M12 2.9v2.2M12 18.9v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.9 12h2.2M18.9 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg></span><span class="theme-option theme-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="theme-icon-fill" d="M19.3 14.4A7.4 7.4 0 0 1 9.6 4.7 8.2 8.2 0 1 0 19.3 14.4Z"/><path class="theme-icon-accent" d="M16.8 3.7l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/></svg></span>';
+const themeToggleHTML = '<span class="theme-option theme-sun" aria-hidden="true"><i class="ph-duotone ph-sun"></i></span><span class="theme-option theme-moon" aria-hidden="true"><i class="ph-duotone ph-moon-stars"></i></span>';
 const fmtInputDate = (s) => {
   if (!s) return '';
   const d = new Date(s);
@@ -60,6 +60,7 @@ function detectLocale(preferred = 'auto') {
 function applyI18n() {
   document.documentElement.lang = state.locale === 'zh' ? 'zh-CN' : 'en';
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
   updateAppName();
   const langBtn = document.getElementById('langToggle');
   if (langBtn) {
@@ -278,7 +279,10 @@ function updateAppName() {
 function setHeader(title, desc, createText = '', showCreate = true) {
   pageTitle.textContent = title;
   pageDesc.textContent = desc;
-  createBtn.textContent = createText || t('common.create');
+  const createLabel = document.getElementById('createLabel');
+  if (createLabel) createLabel.textContent = createText || t('common.create');
+  const createIcon = createBtn.querySelector('i');
+  if (createIcon) createIcon.className = state.view === 'lives' ? 'ph ph-qr-code' : 'ph ph-link-simple';
   createBtn.style.display = showCreate ? '' : 'none';
 }
 function setHeaderForView() {
@@ -291,6 +295,7 @@ function setView(view) {
   state.view = view;
   localStorage.setItem('asl_view', view);
   document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  document.getElementById('createMenu')?.removeAttribute('open');
   render();
 }
 function openModal(title, html, sizeClass = '') {
@@ -327,6 +332,11 @@ async function loadMe() {
   const pref = me.settings?.default_locale || 'auto';
   state.locale = detectLocale(pref);
   applyI18n();
+  const account = me.account || {};
+  const userName = document.getElementById('sidebarUserName');
+  const userRole = document.getElementById('sidebarUserRole');
+  if (userName) userName.textContent = account.name || account.email || tx('运营团队', 'Operations');
+  if (userRole) userRole.textContent = (account.is_admin || account.role === 'admin') ? tx('管理员', 'Administrator') : tx('运营成员', 'Operator');
 }
 
 async function render() {
@@ -342,33 +352,92 @@ async function render() {
     content.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
   }
 }
-function metric(label, value, extra = '') { return `<div class="card"><h3>${esc(label)}</h3><div class="metric">${Number(value || 0).toLocaleString()}</div>${extra ? `<p class="muted">${esc(extra)}</p>` : ''}</div>`; }
+function metric(label, value, icon, tone = 'brand') {
+  return `<article class="metric-card metric-${esc(tone)}">
+    <span class="metric-icon"><i class="ph-duotone ph-${esc(icon)}" aria-hidden="true"></i></span>
+    <div><h3>${esc(label)}</h3><div class="metric">${Number(value || 0).toLocaleString()}</div></div>
+  </article>`;
+}
+
+function isAdminAccount() {
+  return !!(state.me?.account?.is_admin || state.me?.account?.role === 'admin');
+}
+
+function dashboardReviewRowHTML(row) {
+  const isShort = row.kind === 'short';
+  const owner = row.owner_name || row.owner_email || state.me?.account?.name || state.me?.account?.email || '-';
+  const review = reviewButtons(row.kind, row.id, row.approval_status, !isShort);
+  return `<tr class="review-row">
+    <td><div class="review-resource"><span class="resource-mark ${isShort ? 'short-mark' : 'live-mark'}"><i class="ph-duotone ph-${isShort ? 'link-simple' : 'qr-code'}" aria-hidden="true"></i></span><span><strong>${esc(row.title || row.code)}</strong><small>${esc(isShort ? publicShort(row.code) : publicLive(row.code))}</small></span></div></td>
+    <td><span class="type-pill ${isShort ? 'short-type' : 'live-type'}">${isShort ? t('nav.shorts') : t('nav.lives')}</span></td>
+    <td><span class="owner-cell"><i class="ph ph-user-circle" aria-hidden="true"></i>${esc(owner)}</span></td>
+    <td>${approvalBadge(row.approval_status)}</td>
+    <td>${fmtDate(row.updated_at || row.created_at)}</td>
+    <td><div class="review-actions">${review || `<button class="ghost" data-dashboard-edit="${row.id}" data-dashboard-kind="${row.kind}"><i class="ph ph-pencil-simple" aria-hidden="true"></i>${t('common.edit')}</button>`}</div></td>
+  </tr>`;
+}
+
+function healthItem(icon, title, detail, ok, action = '') {
+  return `<div class="health-item"><span class="health-icon ${ok ? 'ok' : 'warn'}"><i class="ph ph-${esc(icon)}" aria-hidden="true"></i></span><span><strong>${esc(title)}</strong><small>${esc(detail)}</small></span>${action}</div>`;
+}
 
 async function renderDashboard() {
   setHeader(t('page.dashboard'), t('page.dashboardDesc'), t('btn.newShort'), true);
-  const { data } = await api('/api/admin/overview');
+  const [overview, shorts, lives] = await Promise.all([
+    api('/api/admin/overview'),
+    api('/api/admin/short-links?limit=100'),
+    api('/api/admin/live-qrs?limit=100'),
+  ]);
+  const data = overview.data || {};
+  const pendingRows = [
+    ...(shorts.data || []).map(row => ({ ...row, kind: 'short' })),
+    ...(lives.data || []).map(row => ({ ...row, kind: 'live' })),
+  ].filter(row => (row.approval_status || 'pending') === 'pending')
+    .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
+    .slice(0, 6);
+  const totalPending = Number(data.short_pending || 0) + Number(data.live_pending || 0) + Number(data.live_items_pending || 0);
+  const recoveryAvailable = !!(state.me?.account?.recovery_key_available || state.me?.account?.recovery_key);
   content.innerHTML = `
-    ${accountRecoveryCardHTML()}
-    ${dashboardHintsHTML(data)}
-    <div class="grid cards">
-      ${metric(t('dash.shortLinks'), data.short_links)}
-      ${metric(t('dash.liveQRs'), data.live_qrs)}
-      ${metric(t('dash.liveItems'), data.live_items_active)}
-      ${metric(t('dash.today'), data.visits_today)}
-      ${metric(t('dash.total'), data.visits_total)}
-    </div>
-    <div class="grid cards secondary-cards">
-      ${metric(t('dash.pendingShort'), data.short_pending)}
-      ${metric(t('dash.pendingLive'), data.live_pending)}
-      ${metric(t('dash.pendingItem'), data.live_items_pending)}
-    </div>
-    <div class="grid dashboard-actions">
-      <div class="card"><h2>${t('dash.shortAbility')}</h2><p class="muted">${t('dash.shortAbilityDesc')}</p><button class="primary" id="dashNewShort">${t('dash.createShort')}</button></div>
-      <div class="card"><h2>${t('dash.liveAbility')}</h2><p class="muted">${t('dash.liveAbilityDesc')}</p><button class="primary" id="dashNewLive">${t('dash.createLive')}</button></div>
-    </div>`;
+    <section class="dashboard-metrics" aria-label="${tx('关键指标','Key metrics')}">
+      ${metric(t('dash.shortLinks'), data.short_links, 'link-simple', 'brand')}
+      ${metric(t('dash.liveQRs'), data.live_qrs, 'qr-code', 'success')}
+      ${metric(t('dash.today'), data.visits_today, 'eye', 'violet')}
+      ${metric(t('dash.total'), data.visits_total, 'trend-up', 'amber')}
+    </section>
+    <section class="dashboard-workspace">
+      <article class="dashboard-panel review-panel">
+        <header class="panel-heading"><div><h2>${tx('待审核内容','Pending reviews')} <span class="count-badge">${totalPending}</span></h2><p>${tx('需要您审批的短链与活码内容','Short links and live QR entries waiting for a decision')}</p></div><button class="quiet-button" id="reviewAllBtn">${tx('查看全部','View all')}<i class="ph ph-arrow-right" aria-hidden="true"></i></button></header>
+        <div class="review-table-wrap"><table class="review-table"><thead><tr><th>${tx('资源','Resource')}</th><th>${tx('类型','Type')}</th><th>${tx('所有者','Owner')}</th><th>${t('common.status')}</th><th>${tx('提交时间','Submitted')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${pendingRows.map(dashboardReviewRowHTML).join('') || `<tr><td colspan="6"><div class="dashboard-empty"><i class="ph-duotone ph-check-circle" aria-hidden="true"></i><strong>${tx('没有待审核内容','Nothing pending')}</strong><span>${tx('所有内容都已处理完成','Every review is up to date')}</span></div></td></tr>`}</tbody></table></div>
+        <footer class="panel-footer"><button class="quiet-button" id="reviewMoreBtn">${tx('查看更多待审核内容','See more pending reviews')}<i class="ph ph-caret-right" aria-hidden="true"></i></button></footer>
+      </article>
+      <aside class="dashboard-panel health-panel">
+        <header class="panel-heading"><div><h2>${tx('系统状态','System status')}</h2><p>${tx('关键服务与账户安全','Critical services and account security')}</p></div><span class="system-badge"><i class="ph ph-check-circle" aria-hidden="true"></i>${tx('运行正常','Operational')}</span></header>
+        <div class="health-section"><h3>${tx('服务健康','Service health')}</h3>
+          ${healthItem('envelope-simple', 'SMTP / Magic Link', data.smtp_configured ? tx('邮件服务已配置','Email delivery configured') : tx('尚未配置，邮件发送不可用','Not configured; email is unavailable'), !!data.smtp_configured, isAdminAccount() && !data.smtp_configured ? `<button class="mini-button" id="configureSMTP">${tx('去配置','Configure')}</button>` : '')}
+          ${healthItem('globe-hemisphere-west', tx('公网域名','Public domain'), data.base_url_configured ? tx('已设置并可用于公开入口','Configured for public links') : tx('当前使用访问地址','Using the current origin'), !!data.base_url_configured)}
+          ${healthItem('database', tx('数据存储','Data storage'), tx('数据库连接正常','Database connection healthy'), true)}
+        </div>
+        <div class="health-section account-health"><h3>${tx('账户与安全','Account & security')}</h3>
+          ${healthItem('browser', tx('浏览器登录','Trusted browser'), tx('长期登录令牌已启用','Long-lived login token enabled'), true)}
+          ${healthItem('key', 'Recovery Key', recoveryAvailable ? tx('已设置，可用于恢复访问','Available for account recovery') : tx('需要重新生成','Rotation required'), recoveryAvailable, `<button class="mini-button" id="viewRecoveryKey">${tx('查看','View')}</button>`)}
+        </div>
+        ${isAdminAccount() ? `<button class="health-footer-button" id="openSystemSettings">${tx('查看系统设置','Open system settings')}<i class="ph ph-arrow-right" aria-hidden="true"></i></button>` : ''}
+      </aside>
+    </section>
+    <section class="dashboard-panel quick-create-panel"><header><div><h2>${tx('快速创建','Quick create')}</h2><p>${tx('立即创建短链或活码，快速投放与分享。','Create an entry and start sharing it right away.')}</p></div></header><div class="quick-create-grid"><button id="dashNewShort"><span class="quick-icon short-mark"><i class="ph-duotone ph-link-simple" aria-hidden="true"></i></span><span><strong>${t('dash.createShort')}</strong><small>${t('dash.createShortHint')}</small></span><i class="ph ph-caret-right" aria-hidden="true"></i></button><button id="dashNewLive"><span class="quick-icon live-mark"><i class="ph-duotone ph-qr-code" aria-hidden="true"></i></span><span><strong>${t('dash.createLive')}</strong><small>${t('dash.createLiveHint')}</small></span><i class="ph ph-caret-right" aria-hidden="true"></i></button></div></section>`;
   document.getElementById('dashNewShort').onclick = () => openShortModal();
   document.getElementById('dashNewLive').onclick = () => openLiveEditor();
-  bindAccountRecoveryCard();
+  document.getElementById('reviewAllBtn').onclick = () => setView(pendingRows[0]?.kind === 'live' ? 'lives' : 'shorts');
+  document.getElementById('reviewMoreBtn').onclick = () => setView(pendingRows[0]?.kind === 'live' ? 'lives' : 'shorts');
+  document.getElementById('openSystemSettings')?.addEventListener('click', () => setView('settings'));
+  document.getElementById('configureSMTP')?.addEventListener('click', () => setView('settings'));
+  document.getElementById('viewRecoveryKey')?.addEventListener('click', openRecoveryKeyModal);
+  document.querySelectorAll('[data-dashboard-edit]').forEach(button => button.addEventListener('click', () => {
+    const row = pendingRows.find(item => String(item.id) === button.dataset.dashboardEdit && item.kind === button.dataset.dashboardKind);
+    if (!row) return;
+    if (row.kind === 'live') openLiveEditor(row); else openShortModal(row);
+  }));
+  bindReviewButtons();
 }
 function dashboardHintsHTML(data) {
   const hints = [];
@@ -391,9 +460,9 @@ function openRecoveryKeyModal() {
   const account = state.me?.account || {};
   const key = account.recovery_key || '';
   if (!key) {
-    openModal(t('dash.recoveryTitle'), `<div class="recovery-dialog warning"><p class="muted">${t('dash.recoveryWarn')}</p><div class="form-actions compact"><button class="ghost" data-close="1">${t('common.cancel')}</button><button class="primary" id="rotateRecoveryKey">${t('dash.rotateRecovery')}</button></div></div>`, 'modal-small');
+    openModal(t('dash.recoveryTitle'), `<div class="recovery-dialog warning"><p class="muted">${t('dash.recoveryWarn')}</p><div class="form-actions compact"><button class="ghost icon-label-button" data-close="1"><i class="ph ph-x" aria-hidden="true"></i>${t('common.cancel')}</button><button class="primary icon-label-button" id="rotateRecoveryKey"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i>${t('dash.rotateRecovery')}</button></div></div>`, 'modal-small');
   } else {
-    openModal(t('dash.recoveryTitle'), `<div class="recovery-dialog"><p class="muted">${state.locale === 'zh' ? '换设备、清理 Cookie 或长期登录令牌丢失时，使用这个 Key 恢复同一个后台账户。' : 'Use this key to recover the same admin account when device tokens are lost.'}</p><code class="secret-line" id="recoveryKeyText">${esc(key)}</code><div class="form-actions compact"><button class="ghost" id="rotateRecoveryKey">${t('dash.rotateRecovery')}</button><button class="primary" id="copyRecoveryKey">${t('common.copy')}</button></div></div>`, 'modal-small');
+    openModal(t('dash.recoveryTitle'), `<div class="recovery-dialog"><p class="muted">${state.locale === 'zh' ? '换设备、清理 Cookie 或长期登录令牌丢失时，使用这个 Key 恢复同一个后台账户。' : 'Use this key to recover the same admin account when device tokens are lost.'}</p><code class="secret-line" id="recoveryKeyText">${esc(key)}</code><div class="form-actions compact"><button class="ghost icon-label-button" id="rotateRecoveryKey"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i>${t('dash.rotateRecovery')}</button><button class="primary icon-label-button" id="copyRecoveryKey"><i class="ph ph-copy" aria-hidden="true"></i>${t('common.copy')}</button></div></div>`, 'modal-small');
     document.getElementById('copyRecoveryKey').onclick = () => copy(key);
   }
   document.getElementById('rotateRecoveryKey').onclick = rotateRecoveryKey;
@@ -417,14 +486,15 @@ function approvalBadge(s) {
   return `<span class="status review-${esc(v)}">${label}</span>`;
 }
 function reviewButtons(type, id, current, includeItems = false, itemIndex = null) {
+  if (!isAdminAccount()) return '';
   const cur = current || 'pending';
   const attrs = itemIndex === null ? '' : ` data-item-index="${itemIndex}"`;
   const include = includeItems ? ' data-include-items="1"' : '';
   const prefix = `data-review-${type}="${id}"${attrs}${include}`;
   const out = [];
-  if (cur !== 'approved') out.push(`<button class="ghost" ${prefix} data-review-status="approved">${t('common.approve')}</button>`);
-  if (cur !== 'rejected') out.push(`<button class="ghost" ${prefix} data-review-status="rejected">${t('common.reject')}</button>`);
-  if (cur === 'approved') out.push(`<button class="ghost" ${prefix} data-review-status="pending">${t('common.backPending')}</button>`);
+  if (cur !== 'approved') out.push(`<button class="review-approve" ${prefix} data-review-status="approved"><i class="ph ph-check" aria-hidden="true"></i>${t('common.approve')}</button>`);
+  if (cur !== 'rejected') out.push(`<button class="review-reject" ${prefix} data-review-status="rejected"><i class="ph ph-x" aria-hidden="true"></i>${t('common.reject')}</button>`);
+  if (cur === 'approved') out.push(`<button class="ghost" ${prefix} data-review-status="pending"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>${t('common.backPending')}</button>`);
   return out.join('');
 }
 async function reviewResource(type, id, status, includeItems = false, itemIndex = null) {
@@ -438,8 +508,9 @@ async function reviewResource(type, id, status, includeItems = false, itemIndex 
     updateLivePublishSummary();
     return;
   }
-  if (type === 'short') renderShorts();
-  if (type === 'live') renderLives();
+  if (state.view === 'dashboard') renderDashboard();
+  else if (type === 'short') renderShorts();
+  else if (type === 'live') renderLives();
 }
 function bindReviewButtons() {
   document.querySelectorAll('[data-review-short]').forEach(b => b.onclick = () => reviewResource('short', b.dataset.reviewShort, b.dataset.reviewStatus));
@@ -450,21 +521,21 @@ function bindReviewButtons() {
 function actionMenuHTML(kind, row) {
   const isShort = kind === 'short';
   const review = reviewButtons(kind, row.id, row.approval_status, !isShort);
-  return `<details class="action-menu"><summary aria-label="${tx('更多操作','More actions')}">${tx('更多','More')}</summary><div class="action-menu-panel">
-    <div class="action-menu-section"><button class="ghost" data-stats-${kind}="${row.id}" data-title="${esc(row.title || row.code)}">${t('common.stats')}</button></div>
+  return `<details class="action-menu"><summary aria-label="${tx('更多操作','More actions')}"><i class="ph ph-dots-three" aria-hidden="true"></i><span>${tx('更多','More')}</span></summary><div class="action-menu-panel">
+    <div class="action-menu-section"><button class="ghost" data-stats-${kind}="${row.id}" data-title="${esc(row.title || row.code)}"><i class="ph ph-chart-line-up" aria-hidden="true"></i>${t('common.stats')}</button></div>
     <div class="action-menu-section">${qrDownloadButtonsHTML(kind, row.code, false)}</div>
     ${review ? `<div class="action-menu-section"><div class="action-menu-title">${t('common.review')}</div>${review}</div>` : ''}
-    <div class="action-menu-section danger-section"><button class="danger" data-del-${kind}="${row.id}">${t('common.delete')}</button></div>
+    <div class="action-menu-section danger-section"><button class="danger" data-del-${kind}="${row.id}"><i class="ph ph-trash" aria-hidden="true"></i>${t('common.delete')}</button></div>
   </div></details>`;
 }
 function rowActionsHTML(kind, row) {
   const isShort = kind === 'short';
   const url = isShort ? publicShort(row.code) : publicLive(row.code);
   const edit = isShort
-    ? `<button class="ghost" data-edit-short="${row.id}">${t('common.edit')}</button>`
-    : `<button class="ghost" data-edit-live="${row.id}">${t('common.config')}</button>`;
+    ? `<button class="ghost" data-edit-short="${row.id}"><i class="ph ph-pencil-simple" aria-hidden="true"></i>${t('common.edit')}</button>`
+    : `<button class="ghost" data-edit-live="${row.id}"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i>${t('common.config')}</button>`;
   return `<div class="row-actions">
-    <button class="ghost" data-copy="${esc(url)}">${t('common.copy')}</button>
+    <button class="ghost" data-copy="${esc(url)}"><i class="ph ph-copy" aria-hidden="true"></i>${t('common.copy')}</button>
     ${edit}
     ${actionMenuHTML(kind, row)}
   </div>`;
@@ -499,7 +570,7 @@ document.addEventListener('keydown', e => {
 async function renderShorts() {
   setHeader(t('page.shorts'), t('page.shortsDesc'), t('btn.newShort'), true);
   const { data } = await api('/api/admin/short-links?limit=100&q=' + encodeURIComponent(state.q || ''));
-  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('short.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card has-row-menus"><table><thead><tr><th>${t('short.title')}</th><th>${t('short.code')}</th><th>${t('short.target')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(shortRowHTML).join('') || `<tr><td colspan="7"><div class="empty">${t('short.empty')}</div></td></tr>`}</tbody></table></div>`;
+  content.innerHTML = `<section class="resource-page"><div class="resource-toolbar"><label class="resource-search"><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="q" placeholder="${t('short.search')}" value="${esc(state.q)}"></label><button class="ghost icon-label-button" id="searchBtn"><i class="ph ph-funnel-simple" aria-hidden="true"></i>${t('common.search')}</button></div><div class="card table-card has-row-menus"><table><thead><tr><th>${t('short.title')}</th><th>${t('short.code')}</th><th>${t('short.target')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(shortRowHTML).join('') || `<tr><td colspan="7"><div class="empty"><i class="ph-duotone ph-link-simple" aria-hidden="true"></i><strong>${t('short.empty')}</strong></div></td></tr>`}</tbody></table></div></section>`;
   document.getElementById('searchBtn').onclick = () => { state.q = val('q'); renderShorts(); };
   document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { state.q = val('q'); renderShorts(); } });
   bindShortActions(data);
@@ -519,7 +590,7 @@ function bindShortActions(rows) {
 }
 function openShortModal(row = null) {
   const previewContent = () => val('slCode') ? publicShort(val('slCode')) : (val('slTarget') || `${baseURL}/s/preview`);
-  openModal(row ? t('short.modalEdit') : t('short.modalNew'), `<div class="form-grid"><label class="field"><span>${t('short.title')}</span><input id="slTitle" value="${esc(row?.title || '')}" placeholder="618 landing"></label><label class="field"><span>${t('short.customCode')}</span><input id="slCode" value="${esc(row?.code || '')}" placeholder="${state.locale === 'zh' ? '留空自动生成' : 'Auto generated if empty'}"></label><label class="field wide"><span>${t('short.targetURL')}</span><input id="slTarget" value="${esc(row?.target_url || '')}" placeholder="https://example.com/landing"></label><label class="field"><span>${t('common.status')}</span><select id="slStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('short.redirect')}</span><select id="slRedirect"><option value="302">302</option><option value="301">301</option><option value="307">307</option><option value="308">308</option></select></label><label class="field"><span>${t('short.starts')}</span><input id="slStarts" type="datetime-local" value="${fmtInputDate(row?.starts_at)}"></label><label class="field"><span>${t('short.expires')}</span><input id="slExpires" type="datetime-local" value="${fmtInputDate(row?.expires_at)}"></label><label class="field"><span>${t('short.max')}</span><input id="slMax" type="number" min="0" value="${row?.max_visits || 0}"></label><label class="field"><span>${t('short.fallback')}</span><input id="slFallback" value="${esc(row?.fallback_url || '')}" placeholder="https://..."></label><label class="field wide"><span>${t('short.remark')}</span><textarea id="slRemark">${esc(row?.remark || '')}</textarea></label><div class="wide">${qrDesignerHTML('sl', row || {}, previewContent())}</div><p class="muted wide">${t('short.pendingTip')}</p></div><div class="form-actions"><button class="ghost" data-close="1">${t('common.cancel')}</button><button class="primary" id="saveShort">${t('common.save')}</button></div>`);
+  openModal(row ? t('short.modalEdit') : t('short.modalNew'), `<div class="form-grid"><label class="field"><span>${t('short.title')}</span><input id="slTitle" value="${esc(row?.title || '')}" placeholder="618 landing"></label><label class="field"><span>${t('short.customCode')}</span><input id="slCode" value="${esc(row?.code || '')}" placeholder="${state.locale === 'zh' ? '留空自动生成' : 'Auto generated if empty'}"></label><label class="field wide"><span>${t('short.targetURL')}</span><input id="slTarget" value="${esc(row?.target_url || '')}" placeholder="https://example.com/landing"></label><label class="field"><span>${t('common.status')}</span><select id="slStatus"><option value="active">${t('common.enabled')}</option><option value="disabled">${t('common.disabled')}</option></select></label><label class="field"><span>${t('short.redirect')}</span><select id="slRedirect"><option value="302">302</option><option value="301">301</option><option value="307">307</option><option value="308">308</option></select></label><label class="field"><span>${t('short.starts')}</span><input id="slStarts" type="datetime-local" value="${fmtInputDate(row?.starts_at)}"></label><label class="field"><span>${t('short.expires')}</span><input id="slExpires" type="datetime-local" value="${fmtInputDate(row?.expires_at)}"></label><label class="field"><span>${t('short.max')}</span><input id="slMax" type="number" min="0" value="${row?.max_visits || 0}"></label><label class="field"><span>${t('short.fallback')}</span><input id="slFallback" value="${esc(row?.fallback_url || '')}" placeholder="https://..."></label><label class="field wide"><span>${t('short.remark')}</span><textarea id="slRemark">${esc(row?.remark || '')}</textarea></label><div class="wide">${qrDesignerHTML('sl', row || {}, previewContent())}</div><p class="muted wide">${t('short.pendingTip')}</p></div><div class="form-actions"><button class="ghost icon-label-button" data-close="1"><i class="ph ph-x" aria-hidden="true"></i>${t('common.cancel')}</button><button class="primary icon-label-button" id="saveShort"><i class="ph ph-check" aria-hidden="true"></i>${t('common.save')}</button></div>`);
   document.getElementById('slStatus').value = row?.status || 'active';
   document.getElementById('slRedirect').value = String(row?.redirect_type || 302);
   document.getElementById('slQRStyle').value = row?.qr_style || 'rounded';
@@ -540,7 +611,7 @@ async function submitShort(id) {
 async function renderLives() {
   setHeader(t('page.lives'), t('page.livesDesc'), t('btn.newLive'), true);
   const { data } = await api('/api/admin/live-qrs?limit=100&q=' + encodeURIComponent(state.q || ''));
-  content.innerHTML = `<div class="toolbar"><input id="q" placeholder="${t('live.search')}" value="${esc(state.q)}"><button class="ghost" id="searchBtn">${t('common.search')}</button></div><div class="card table-card has-row-menus"><table><thead><tr><th>${t('live.title')}</th><th>${t('live.link')}</th><th>${t('live.strategy')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(liveRowHTML).join('') || `<tr><td colspan="7"><div class="empty">${t('live.empty')}</div></td></tr>`}</tbody></table></div>`;
+  content.innerHTML = `<section class="resource-page"><div class="resource-toolbar"><label class="resource-search"><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="q" placeholder="${t('live.search')}" value="${esc(state.q)}"></label><button class="ghost icon-label-button" id="searchBtn"><i class="ph ph-funnel-simple" aria-hidden="true"></i>${t('common.search')}</button></div><div class="card table-card has-row-menus"><table><thead><tr><th>${t('live.title')}</th><th>${t('live.link')}</th><th>${t('live.strategy')}</th><th>${t('common.status')} / ${t('common.review')}</th><th>${t('common.visits')}</th><th>${t('common.updated')}</th><th>${t('common.actions')}</th></tr></thead><tbody>${data.map(liveRowHTML).join('') || `<tr><td colspan="7"><div class="empty"><i class="ph-duotone ph-qr-code" aria-hidden="true"></i><strong>${t('live.empty')}</strong></div></td></tr>`}</tbody></table></div></section>`;
   document.getElementById('searchBtn').onclick = () => { state.q = val('q'); renderLives(); };
   document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { state.q = val('q'); renderLives(); } });
   bindLiveActions(data);
@@ -622,7 +693,7 @@ function liveEditorHTML(data) {
       </div>
     </section>
     <section class="tab-panel" id="liveTab-publish" hidden><div id="livePublishSummary" class="publish-summary"></div></section>
-  </div><div class="form-actions live-editor-actions"><button class="ghost" data-close="1">${t('common.close')}</button><button class="ghost" id="saveLiveClose">${t('live.saveClose')}</button><button class="primary" id="saveLiveBundle">${t('live.saveAll')}</button></div>`;
+  </div><div class="form-actions live-editor-actions"><button class="ghost icon-label-button" data-close="1"><i class="ph ph-x" aria-hidden="true"></i>${t('common.close')}</button><button class="ghost icon-label-button" id="saveLiveClose"><i class="ph ph-check-circle" aria-hidden="true"></i>${t('live.saveClose')}</button><button class="primary icon-label-button" id="saveLiveBundle"><i class="ph ph-floppy-disk" aria-hidden="true"></i>${t('live.saveAll')}</button></div>`;
 }
 function bindLiveEditor() {
   document.querySelectorAll('[data-live-tab]').forEach(btn => btn.onclick = () => setLiveEditorTab(btn.dataset.liveTab));
@@ -937,6 +1008,22 @@ async function init() {
   document.querySelectorAll('.nav').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
   refreshBtn.addEventListener('click', () => render());
   createBtn.addEventListener('click', () => { if (state.view === 'lives') openLiveEditor(); else openShortModal(); });
+  document.querySelectorAll('[data-create-kind]').forEach(btn => btn.addEventListener('click', () => {
+    document.getElementById('createMenu')?.removeAttribute('open');
+    if (btn.dataset.createKind === 'live') openLiveEditor(); else openShortModal();
+  }));
+  const globalSearch = document.getElementById('globalSearch');
+  globalSearch?.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    state.q = globalSearch.value.trim();
+    setView(state.view === 'lives' ? 'lives' : 'shorts');
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === 'k') {
+      e.preventDefault();
+      globalSearch?.focus();
+    }
+  });
   modal.addEventListener('click', (e) => { if (e.target.dataset.close) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   try { await loadMe(); } catch (err) { toast(err.message || '账户信息加载失败'); }

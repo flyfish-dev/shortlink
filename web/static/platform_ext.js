@@ -7,6 +7,13 @@
   const txt = (zh, en) => isZh() ? zh : en;
   let me = null;
   const isAdmin = () => !!(me?.account?.is_admin || me?.account?.role === 'admin');
+  const notify = (message, kind = '') => {
+    const el = document.createElement('div');
+    el.className = `toast${kind ? ` ${kind}` : ''}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+  };
 
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
@@ -93,17 +100,17 @@
     setUsersHeader();
     const { data } = await api('/api/admin/users?limit=100');
     const headers = ['ID', txt('邮箱','Email'), txt('名称','Name'), txt('角色','Role'), txt('状态','Status'), txt('操作','Actions')];
-    $('#content').innerHTML = `<div class="toolbar"><button class="primary" id="newUserBtn">${txt('新建用户','New user')}</button></div><div class="card table-card user-table-card"><table class="responsive-table user-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${data.map(u => `<tr class="user-row"><td data-label="${headers[0]}">${u.id}</td><td data-label="${headers[1]}">${esc(u.email || '-')}</td><td data-label="${headers[2]}">${esc(u.name || '-')}</td><td data-label="${headers[3]}"><span class="badge">${esc(u.role)}</span></td><td data-label="${headers[4]}"><span class="badge">${esc(u.status)}</span></td><td class="action-cell" data-label="${headers[5]}"><button class="ghost" data-edit-user="${u.id}">${txt('编辑','Edit')}</button></td></tr>`).join('') || `<tr><td colspan="6"><div class="empty">${txt('暂无用户','No users')}</div></td></tr>`}</tbody></table></div>`;
+    $('#content').innerHTML = `<section class="resource-page"><div class="resource-toolbar"><div class="resource-summary"><i class="ph-duotone ph-users-three" aria-hidden="true"></i><span><strong>${data.length}</strong><small>${txt('位账户','accounts')}</small></span></div><button class="primary icon-label-button" id="newUserBtn"><i class="ph ph-user-plus" aria-hidden="true"></i>${txt('新建用户','New user')}</button></div><div class="card table-card user-table-card"><table class="responsive-table user-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${data.map(u => `<tr class="user-row"><td data-label="${headers[0]}">${u.id}</td><td data-label="${headers[1]}"><div class="user-identity"><span class="user-avatar"><i class="ph-duotone ph-user-circle" aria-hidden="true"></i></span><span><strong>${esc(u.name || '-')}</strong><small>${esc(u.email || '-')}</small></span></div></td><td data-label="${headers[2]}">${esc(u.name || '-')}</td><td data-label="${headers[3]}"><span class="type-pill">${esc(u.role)}</span></td><td data-label="${headers[4]}"><span class="status ${u.status === 'active' ? 'active' : 'disabled'}">${esc(u.status)}</span></td><td class="action-cell" data-label="${headers[5]}"><button class="ghost icon-label-button" data-edit-user="${u.id}"><i class="ph ph-pencil-simple" aria-hidden="true"></i>${txt('编辑','Edit')}</button></td></tr>`).join('') || `<tr><td colspan="6"><div class="empty"><i class="ph-duotone ph-users" aria-hidden="true"></i><strong>${txt('暂无用户','No users')}</strong></div></td></tr>`}</tbody></table></div></section>`;
     $('#newUserBtn').onclick = () => openUserModal();
     $$('[data-edit-user]').forEach(btn => btn.onclick = () => openUserModal(data.find(u => String(u.id) === btn.dataset.editUser)));
   }
   function openUserModal(row) {
     const modal = $('#modal'), card = modal.querySelector('.modal-card');
     $('#modalTitle').textContent = row ? txt('编辑用户','Edit user') : txt('新建用户','New user');
-    $('#modalBody').innerHTML = `<div class="form-grid"><label class="field"><span>${txt('邮箱','Email')}</span><input id="extUserEmail" type="email" value="${esc(row?.email || '')}" ${row ? 'disabled' : ''}></label><label class="field"><span>${txt('名称','Name')}</span><input id="extUserName" value="${esc(row?.name || '')}"></label><label class="field"><span>${txt('角色','Role')}</span><select id="extUserRole"><option value="user">User</option><option value="admin">Admin</option></select></label><label class="field"><span>${txt('状态','Status')}</span><select id="extUserStatus"><option value="active">${txt('启用','Active')}</option><option value="disabled">${txt('停用','Disabled')}</option></select></label></div><div class="form-actions"><button class="ghost" data-close="1">${txt('取消','Cancel')}</button><button class="primary" id="extSaveUser">${txt('保存','Save')}</button></div>`;
+    $('#modalBody').innerHTML = `<div class="form-grid"><label class="field"><span>${txt('邮箱','Email')}</span><input id="extUserEmail" type="email" value="${esc(row?.email || '')}" ${row ? 'disabled' : ''}></label><label class="field"><span>${txt('名称','Name')}</span><input id="extUserName" value="${esc(row?.name || '')}"></label><label class="field"><span>${txt('角色','Role')}</span><select id="extUserRole"><option value="user">User</option><option value="admin">Admin</option></select></label><label class="field"><span>${txt('状态','Status')}</span><select id="extUserStatus"><option value="active">${txt('启用','Active')}</option><option value="disabled">${txt('停用','Disabled')}</option></select></label></div><div class="form-actions"><button class="ghost icon-label-button" data-close="1"><i class="ph ph-x" aria-hidden="true"></i>${txt('取消','Cancel')}</button><button class="primary icon-label-button" id="extSaveUser"><i class="ph ph-check" aria-hidden="true"></i>${txt('保存','Save')}</button></div>`;
     card.className = 'modal-card'; modal.hidden = false;
     $('#extUserRole').value = row?.role || 'user'; $('#extUserStatus').value = row?.status || 'active';
-    $('#extSaveUser').onclick = async () => { const payload = { email: val('extUserEmail'), name: val('extUserName'), role: val('extUserRole'), status: val('extUserStatus') }; const out = await api(row ? `/api/admin/users/${row.id}` : '/api/admin/users', { method: row ? 'PUT' : 'POST', body: JSON.stringify(payload) }); modal.hidden = true; alert(out.recovery_key ? `${txt('恢复 Key','Recovery key')}: ${out.recovery_key}` : txt('已保存','Saved')); renderUsers(); };
+    $('#extSaveUser').onclick = async () => { const payload = { email: val('extUserEmail'), name: val('extUserName'), role: val('extUserRole'), status: val('extUserStatus') }; const out = await api(row ? `/api/admin/users/${row.id}` : '/api/admin/users', { method: row ? 'PUT' : 'POST', body: JSON.stringify(payload) }); modal.hidden = true; notify(out.recovery_key ? `${txt('恢复 Key','Recovery key')}: ${out.recovery_key}` : txt('已保存','Saved')); renderUsers(); };
   }
 
   document.addEventListener('click', e => {

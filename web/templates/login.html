@@ -6,6 +6,9 @@
   <title>{{.AppName}} · Login</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
+  <link rel="stylesheet" href="/assets/vendor/phosphor/regular/style.css?v=2.1.2">
+  <link rel="stylesheet" href="/assets/vendor/phosphor/duotone/style.css?v=2.1.2">
+  <link rel="stylesheet" href="/assets/modern-ui.css?v={{.AssetVersion}}">
 </head>
 <body class="login-body">
   <main class="login-shell">
@@ -40,7 +43,7 @@
         <span data-i18n="settings.email">Email</span>
         <input id="magicEmail" type="email" autocomplete="email" placeholder="you@example.com">
       </label>
-      <button id="magicBtn" class="primary full" data-i18n="login.sendMagic">Send login link</button>
+      <button id="magicBtn" class="primary full icon-label-button"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i><span data-i18n="login.sendMagic">Send login link</span></button>
       <p id="magicMsg" class="message"></p>
     </section>
 
@@ -54,7 +57,7 @@
     <div class="divider"><span data-i18n="login.or">or</span></div>
 
     <section class="login-section" id="oneClickSection">
-      <button id="loginBtn" class="ghost full" data-i18n="login.oneClick">Enter with this browser</button>
+      <button id="loginBtn" class="ghost full icon-label-button"><i class="ph ph-browser" aria-hidden="true"></i><span data-i18n="login.oneClick">Enter with this browser</span></button>
       <p class="muted small" data-i18n="login.oneClickHint">Direct access only works for a bound browser. Use Magic Link or recovery key on new devices.</p>
       <p id="msg" class="message"></p>
     </section>
@@ -66,7 +69,7 @@
         <span data-i18n="login.recoveryKey">Recovery key</span>
         <input id="recoveryKey" type="password" autocomplete="off" placeholder="aisk_...">
       </label>
-      <button id="recoverBtn" class="ghost full" data-i18n="login.recoverBtn">Login with recovery key</button>
+      <button id="recoverBtn" class="ghost full icon-label-button"><i class="ph ph-key" aria-hidden="true"></i><span data-i18n="login.recoverBtn">Login with recovery key</span></button>
       <p id="recoverMsg" class="message"></p>
     </div>
     <a class="source-link github-source" href="https://github.com/flyfish-dev/shortlink" target="_blank" rel="license noopener" aria-label="View source code on GitHub"><span class="github-source-icon" aria-hidden="true"></span><span>GitHub</span></a>
@@ -92,7 +95,7 @@
     let lang = detectLang();
     let bootstrapSettings = {};
     const t = k => I18N[lang][k] || I18N.en[k] || k;
-    const themeToggleHTML = '<span class="theme-option theme-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="theme-icon-fill" cx="12" cy="12" r="4.4"/><path class="theme-icon-accent" d="M12 2.9v2.2M12 18.9v2.2M4.3 4.3l1.6 1.6M18.1 18.1l1.6 1.6M2.9 12h2.2M18.9 12h2.2M4.3 19.7l1.6-1.6M18.1 5.9l1.6-1.6"/></svg></span><span class="theme-option theme-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="theme-icon-fill" d="M19.3 14.4A7.4 7.4 0 0 1 9.6 4.7 8.2 8.2 0 1 0 19.3 14.4Z"/><path class="theme-icon-accent" d="M16.8 3.7l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/></svg></span>';
+    const themeToggleHTML = '<span class="theme-option theme-sun" aria-hidden="true"><i class="ph-duotone ph-sun"></i></span><span class="theme-option theme-moon" aria-hidden="true"><i class="ph-duotone ph-moon-stars"></i></span>';
     const localizedAppName = () => lang === 'en' ? (bootstrapSettings.app_name_en || bootstrapSettings.app_name || 'AI Shortlink') : (bootstrapSettings.app_name_zh || bootstrapSettings.app_name || '{{.AppName}}');
     function syncAppName(){ const el = document.getElementById('appName'); if (el) el.textContent = localizedAppName(); }
     function syncLangToggle(){ const btn = document.getElementById('langToggle'); btn.dataset.locale = lang; btn.innerHTML = '<span>中文</span><span>EN</span>'; btn.setAttribute('aria-label', lang === 'zh' ? '切换为英文' : 'Switch to Chinese'); btn.setAttribute('title', btn.getAttribute('aria-label')); }
@@ -137,7 +140,7 @@
         if (!res.ok || !data.ok) throw new Error(data.message || 'Send failed');
         magicMsg.textContent = data.message || 'OK';
       } catch (err) { magicMsg.textContent = err.message; }
-      finally { magicBtn.disabled = false; magicBtn.textContent = t('login.sendMagic'); }
+      finally { magicBtn.disabled = false; magicBtn.querySelector('span').textContent = t('login.sendMagic'); }
     });
 
     btn.addEventListener('click', async () => {

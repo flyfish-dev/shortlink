@@ -7,21 +7,34 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
   <link rel="stylesheet" href="/assets/platform_ext.css?v={{.AssetVersion}}">
+  <link rel="stylesheet" href="/assets/vendor/phosphor/regular/style.css?v=2.1.2">
+  <link rel="stylesheet" href="/assets/vendor/phosphor/duotone/style.css?v=2.1.2">
+  <link rel="stylesheet" href="/assets/modern-ui.css?v={{.AssetVersion}}">
 </head>
 <body>
   <div class="shell" id="app" data-base-url="{{.BaseURL}}">
     <aside class="sidebar">
       <div class="brand"><img class="brand-logo" src="/assets/brand.svg" alt=""><strong id="brandName">{{.AppName}}</strong></div>
-      <nav>
-        <button class="nav active" data-view="dashboard" data-i18n="nav.dashboard">Dashboard</button>
-        <button class="nav" data-view="shorts" data-i18n="nav.shorts">Short links</button>
-        <button class="nav" data-view="lives" data-i18n="nav.lives">Live QR</button>
-        <button class="nav admin-only" data-view="users" data-i18n="nav.users">用户管理</button>
-        <button class="nav admin-only" data-view="settings" data-i18n="nav.settings">Settings</button>
+      <nav aria-label="Primary navigation">
+        <div class="nav-group">
+          <p class="nav-section-title" data-i18n="nav.operations">运营</p>
+          <button class="nav active" data-view="dashboard"><i class="ph ph-house" aria-hidden="true"></i><span data-i18n="nav.dashboard">Dashboard</span></button>
+          <button class="nav" data-view="shorts"><i class="ph ph-link" aria-hidden="true"></i><span data-i18n="nav.shorts">Short links</span></button>
+          <button class="nav" data-view="lives"><i class="ph ph-qr-code" aria-hidden="true"></i><span data-i18n="nav.lives">Live QR</span></button>
+        </div>
+        <div class="nav-group admin-only">
+          <p class="nav-section-title" data-i18n="nav.management">管理</p>
+          <button class="nav" data-view="users"><i class="ph ph-users" aria-hidden="true"></i><span data-i18n="nav.users">用户管理</span></button>
+          <button class="nav" data-view="settings"><i class="ph ph-gear-six" aria-hidden="true"></i><span data-i18n="nav.settings">Settings</span></button>
+        </div>
       </nav>
       <div class="side-foot">
+        <div class="sidebar-profile" id="sidebarProfile">
+          <span class="sidebar-avatar"><i class="ph-duotone ph-user-circle" aria-hidden="true"></i></span>
+          <span class="sidebar-profile-copy"><strong id="sidebarUserName">Console</strong><small id="sidebarUserRole">Operator</small></span>
+        </div>
         <a class="source-link github-source" href="https://github.com/flyfish-dev/shortlink" target="_blank" rel="license noopener" aria-label="View source code on GitHub"><span class="github-source-icon" aria-hidden="true"></span><span>GitHub</span></a>
-        <a class="logout-link" href="/auth/logout" data-i18n="common.logout">Logout</a>
+        <a class="logout-link" href="/auth/logout"><i class="ph ph-sign-out" aria-hidden="true"></i><span data-i18n="common.logout">Logout</span></a>
         <p class="site-copyright">Copyright © 2026 Flyfish Dev. AI Shortlink is open source under <a href="https://github.com/flyfish-dev/shortlink/blob/main/LICENSE" target="_blank" rel="license noopener">AGPL-3.0-only</a>.</p>
       </div>
     </aside>
@@ -32,8 +45,20 @@
           <p id="pageDesc">Manage links, live QR codes and analytics.</p>
         </div>
         <div class="top-actions">
-          <button class="ghost" id="refreshBtn" data-i18n="common.refresh">Refresh</button>
-          <button class="primary" id="createBtn">Create</button>
+          <label class="command-search" for="globalSearch">
+            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+            <input id="globalSearch" type="search" autocomplete="off" data-i18n-placeholder="common.globalSearch" placeholder="搜索短链、活码或输入命令…">
+            <kbd>⌘K</kbd>
+          </label>
+          <button class="ghost icon-label-button" id="refreshBtn"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i><span data-i18n="common.refresh">Refresh</span></button>
+          <button class="primary icon-label-button" id="createBtn"><i class="ph ph-link-simple" aria-hidden="true"></i><span id="createLabel">Create</span></button>
+          <details class="create-menu" id="createMenu">
+            <summary class="ghost" aria-label="Quick create"><span data-i18n="common.create">Create</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+            <div class="create-menu-panel">
+              <button type="button" data-create-kind="short"><i class="ph-duotone ph-link-simple" aria-hidden="true"></i><span><strong data-i18n="dash.createShort">Create short link</strong><small data-i18n="dash.createShortHint">Shorten and track a destination</small></span></button>
+              <button type="button" data-create-kind="live"><i class="ph-duotone ph-qr-code" aria-hidden="true"></i><span><strong data-i18n="dash.createLive">Create live QR</strong><small data-i18n="dash.createLiveHint">Maintain a reusable QR entry</small></span></button>
+            </div>
+          </details>
           <div class="header-controls" aria-label="Global preferences">
             <button class="icon-btn theme-switch" id="themeToggle" type="button" aria-label="Toggle theme"></button>
             <button class="lang-switch" id="langToggle" type="button" aria-label="切换语言"><span>中文</span><span>EN</span></button>
@@ -49,7 +74,7 @@
     <div class="modal-card">
       <div class="modal-head">
         <h2 id="modalTitle">Edit</h2>
-        <button class="icon" data-close="1">x</button>
+        <button class="icon" data-close="1" aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button>
       </div>
       <div id="modalBody"></div>
     </div>
