@@ -90,7 +90,8 @@ func TestBuildApprovalNotificationMessageProducesProfessionalContent(t *testing.
 		Title:         "Documentation portal",
 		Code:          "docs",
 		PublicURL:     "https://s.example.com/s/docs",
-		ApprovedAt:    time.Date(2026, 6, 30, 9, 15, 0, 0, time.UTC),
+		Decision:      "approved",
+		ReviewedAt:    time.Date(2026, 6, 30, 9, 15, 0, 0, time.UTC),
 		RecipientName: "Taylor",
 	}
 	msg, envelopeFrom, err := buildApprovalNotificationMessage(st, "no-reply@mail.example.com", "user@example.com", n)
@@ -136,24 +137,59 @@ func TestBuildApprovalNotificationMessageProducesProfessionalContent(t *testing.
 	}
 }
 
-func TestApprovalBecameApprovedOnlyOnTransition(t *testing.T) {
+func TestBuildApprovalNotificationMessageIncludesRejectionReason(t *testing.T) {
+	st := model.SystemSettings{
+		AppName:       "AI Shortlink",
+		AppNameEN:     "AI Shortlink",
+		BaseURL:       "https://s.example.com",
+		DefaultLocale: "en-US",
+	}
+	n := approvalNotification{
+		ResourceType:  "live_qr",
+		Title:         "Campaign QR",
+		Code:          "campaign",
+		PublicURL:     "https://s.example.com/q/campaign",
+		Decision:      "rejected",
+		ReviewNote:    "Please replace the expired destination URL.",
+		ReviewedAt:    time.Date(2026, 7, 13, 8, 0, 0, 0, time.UTC),
+		RecipientName: "Taylor",
+	}
+	msg, _, err := buildApprovalNotificationMessage(st, "no-reply@mail.example.com", "user@example.com", n)
+	if err != nil {
+		t.Fatalf("buildApprovalNotificationMessage() error = %v", err)
+	}
+	raw := string(msg)
+	for _, want := range []string{
+		"AI Shortlink rejection notification",
+		"was not approved and is not publicly available",
+		"Decision: Rejected",
+		"Please replace the expired destination URL.",
+		"https://s.example.com/admin",
+	} {
+		if !strings.Contains(raw, want) {
+			t.Fatalf("rejection message missing %q in:\n%s", want, raw)
+		}
+	}
+}
+
+func TestReviewDecisionChangedForApprovalAndRejection(t *testing.T) {
 	tests := []struct {
-		name   string
 		before string
 		after  string
 		want   bool
 	}{
-		{name: "pending to approved", before: "pending", after: "approved", want: true},
-		{name: "rejected to approved", before: "rejected", after: "approved", want: true},
-		{name: "already approved", before: "approved", after: "approved", want: false},
-		{name: "approved to pending", before: "approved", after: "pending", want: false},
+		{before: "pending", after: "approved", want: true},
+		{before: "pending", after: "rejected", want: true},
+		{before: "approved", after: "rejected", want: true},
+		{before: "rejected", after: "approved", want: true},
+		{before: "approved", after: "approved", want: false},
+		{before: "rejected", after: "rejected", want: false},
+		{before: "approved", after: "pending", want: false},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := approvalBecameApproved(tt.before, tt.after); got != tt.want {
-				t.Fatalf("approvalBecameApproved(%q, %q) = %v, want %v", tt.before, tt.after, got, tt.want)
-			}
-		})
+		if got := reviewDecisionChanged(tt.before, tt.after); got != tt.want {
+			t.Errorf("reviewDecisionChanged(%q, %q) = %v, want %v", tt.before, tt.after, got, tt.want)
+		}
 	}
 }
 

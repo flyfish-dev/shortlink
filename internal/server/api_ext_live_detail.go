@@ -38,7 +38,7 @@ func (s *Server) apiExtLiveQRDetail(w http.ResponseWriter, r *http.Request) {
 		if handleStoreErr(w, err) {
 			return
 		}
-		s.notifyLiveQRApproved(before, updated, publicLiveURL(s.publicBaseURL(r), updated.Code))
+		s.notifyLiveQRReviewed(before, updated, publicLiveURL(s.publicBaseURL(r), updated.Code))
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 		return
 	}
@@ -181,7 +181,7 @@ func (s *Server) apiExtLiveQRItemDetail(w http.ResponseWriter, r *http.Request) 
 		if handleStoreErr(w, err) {
 			return
 		}
-		s.notifyLiveQRItemApproved(before, updated, live, publicLiveURL(s.publicBaseURL(r), live.Code))
+		s.notifyLiveQRItemReviewed(before, updated, live, publicLiveURL(s.publicBaseURL(r), live.Code))
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 	case http.MethodDelete:
 		err := s.store().DeleteLiveQRItem(r.Context(), id)

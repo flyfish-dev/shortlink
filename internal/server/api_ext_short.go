@@ -98,7 +98,7 @@ func (s *Server) apiExtShortLinkDetail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = s.store().Audit(r.Context(), deviceIDFromContext(r.Context()), "short_link.review", "short_link", &id, p.Status, util.ClientIP(r, s.cfg.TrustProxy))
-		s.notifyShortLinkApproved(before, updated, publicShortURL(s.publicBaseURL(r), updated.Code))
+		s.notifyShortLinkReviewed(before, updated, publicShortURL(s.publicBaseURL(r), updated.Code))
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 		return
 	}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>{{.Title}} · {{.AppName}}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css?v={{.AssetVersion}}">
+</head>
+<body class="public-body">
+  <main class="qr-card">
+    <img class="brand-logo login-logo" src="/assets/brand.svg" alt="">
+    <h1>{{.Title}}</h1>
+    <p class="muted center">{{.Message}}</p>
+    <form method="post" action="/auth/magic/consume" autocomplete="off">
+      <input type="hidden" name="token" value="{{.Token}}">
+      <button class="primary full" type="submit">{{.ButtonText}}</button>
+    </form>
+    <p class="tiny">{{.Footnote}}</p>
+    <a class="source-link github-source" href="https://github.com/flyfish-dev/shortlink" target="_blank" rel="license noopener" aria-label="View source code on GitHub"><span class="github-source-icon" aria-hidden="true"></span><span>GitHub</span></a>
+    <p class="site-copyright">Copyright © 2026 Flyfish Dev. AI Shortlink is open source under <a href="https://github.com/flyfish-dev/shortlink/blob/main/LICENSE" target="_blank" rel="license noopener">AGPL-3.0-only</a>.</p>
+  </main>
+</body>
+</html>

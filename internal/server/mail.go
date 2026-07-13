@@ -131,6 +131,11 @@ func buildMagicLinkMessage(st model.SystemSettings, from, to, link string, expir
 
 func buildApprovalNotificationMessage(st model.SystemSettings, from, to string, n approvalNotification) ([]byte, string, error) {
 	isEN := strings.HasPrefix(strings.ToLower(st.DefaultLocale), "en")
+	decision := strings.ToLower(strings.TrimSpace(n.Decision))
+	if decision != "rejected" {
+		decision = "approved"
+	}
+	isRejected := decision == "rejected"
 	appName := firstNonEmpty(st.AppName, st.AppNameZH, st.AppNameEN, "AI短链平台")
 	lang := "zh-CN"
 	resourceType := approvalResourceLabel(n.ResourceType, false)
@@ -139,14 +144,17 @@ func buildApprovalNotificationMessage(st model.SystemSettings, from, to string, 
 	subject := fmt.Sprintf("%s 审核通过通知", appName)
 	statusLine := "你提交的内容已通过审核，现在可以正常访问。"
 	buttonText := "查看内容"
+	buttonURL := n.PublicURL
 	footer := "这是一封系统审核通知邮件，不包含附件或营销内容。如果你没有提交该内容，请联系系统管理员。"
-	approvedAt := approvalMailTime(n.ApprovedAt, false)
+	reviewedAt := approvalMailTime(n.ReviewedAt, false)
 	nextStep := "你可以在管理后台继续查看访问数据和二维码下载。"
 	rows := []mailtpl.InfoRow{
 		{Label: "类型", Value: resourceType},
 		{Label: "名称", Value: title},
 		{Label: "公开地址", Value: n.PublicURL},
-		{Label: "审核时间", Value: approvedAt},
+		{Label: "审核结果", Value: "已通过"},
+		{Label: "审核意见", Value: n.ReviewNote},
+		{Label: "审核时间", Value: reviewedAt},
 	}
 	if n.ParentTitle != "" {
 		rows = []mailtpl.InfoRow{
@@ -154,10 +162,24 @@ func buildApprovalNotificationMessage(st model.SystemSettings, from, to string, 
 			{Label: "所属活码", Value: n.ParentTitle},
 			{Label: "名称", Value: title},
 			{Label: "活码入口", Value: n.PublicURL},
-			{Label: "审核时间", Value: approvedAt},
+			{Label: "审核结果", Value: "已通过"},
+			{Label: "审核意见", Value: n.ReviewNote},
+			{Label: "审核时间", Value: reviewedAt},
 		}
 	}
-	data := mailtpl.ApprovalData{AppName: appName, Title: subject, Greeting: greeting, Intro: statusLine, NextStep: nextStep, ButtonText: buttonText, ButtonURL: n.PublicURL, Rows: rows, Footnote: footer}
+	if isRejected {
+		subject = fmt.Sprintf("%s 审核驳回通知", appName)
+		statusLine = "你提交的内容未通过审核，当前无法公开访问。"
+		buttonText = "进入后台修改"
+		buttonURL = reviewConsoleURL(st, n.PublicURL)
+		nextStep = "请根据审核意见修改内容并重新提交审核。"
+		for i := range rows {
+			if rows[i].Label == "审核结果" {
+				rows[i].Value = "已驳回"
+			}
+		}
+	}
+	data := mailtpl.ApprovalData{AppName: appName, Title: subject, Greeting: greeting, Intro: statusLine, NextStep: nextStep, ButtonText: buttonText, ButtonURL: buttonURL, Rows: rows, Footnote: footer}
 	if isEN {
 		lang = "en-US"
 		appName = firstNonEmpty(st.AppNameEN, st.AppName, "AI Shortlink")
@@ -167,14 +189,17 @@ func buildApprovalNotificationMessage(st model.SystemSettings, from, to string, 
 		subject = fmt.Sprintf("%s approval notification", appName)
 		statusLine = "Your submitted content has been approved and is now available."
 		buttonText = "View content"
+		buttonURL = n.PublicURL
 		footer = "This is a system review notification. It has no attachments and no marketing content. If you did not submit this content, contact your administrator."
-		approvedAt = approvalMailTime(n.ApprovedAt, true)
+		reviewedAt = approvalMailTime(n.ReviewedAt, true)
 		nextStep = "You can continue to review analytics and QR downloads in the admin console."
 		rows = []mailtpl.InfoRow{
 			{Label: "Type", Value: resourceType},
 			{Label: "Name", Value: title},
 			{Label: "Public URL", Value: n.PublicURL},
-			{Label: "Approved at", Value: approvedAt},
+			{Label: "Decision", Value: "Approved"},
+			{Label: "Review note", Value: n.ReviewNote},
+			{Label: "Reviewed at", Value: reviewedAt},
 		}
 		if n.ParentTitle != "" {
 			rows = []mailtpl.InfoRow{
@@ -182,12 +207,36 @@ func buildApprovalNotificationMessage(st model.SystemSettings, from, to string, 
 				{Label: "Live QR", Value: n.ParentTitle},
 				{Label: "Name", Value: title},
 				{Label: "Entry URL", Value: n.PublicURL},
-				{Label: "Approved at", Value: approvedAt},
+				{Label: "Decision", Value: "Approved"},
+				{Label: "Review note", Value: n.ReviewNote},
+				{Label: "Reviewed at", Value: reviewedAt},
 			}
 		}
-		data = mailtpl.ApprovalData{AppName: appName, Title: subject, Greeting: greeting, Intro: statusLine, NextStep: nextStep, ButtonText: buttonText, ButtonURL: n.PublicURL, Rows: rows, Footnote: footer}
+		if isRejected {
+			subject = fmt.Sprintf("%s rejection notification", appName)
+			statusLine = "Your submitted content was not approved and is not publicly available."
+			buttonText = "Open admin console"
+			buttonURL = reviewConsoleURL(st, n.PublicURL)
+			nextStep = "Please update the content based on the review note and submit it again."
+			for i := range rows {
+				if rows[i].Label == "Decision" {
+					rows[i].Value = "Rejected"
+				}
+			}
+		}
+		data = mailtpl.ApprovalData{AppName: appName, Title: subject, Greeting: greeting, Intro: statusLine, NextStep: nextStep, ButtonText: buttonText, ButtonURL: buttonURL, Rows: rows, Footnote: footer}
 	}
 	return buildTransactionalMessage(st, from, to, transactionalEmail{AppName: appName, Lang: lang, Subject: subject, Text: mailtpl.ApprovalText(data), HTML: mailtpl.ApprovalHTML(data)})
+}
+
+func reviewConsoleURL(st model.SystemSettings, publicURL string) string {
+	if base := strings.TrimRight(strings.TrimSpace(st.BaseURL), "/"); base != "" {
+		return base + "/admin"
+	}
+	if u, err := url.Parse(strings.TrimSpace(publicURL)); err == nil && u.Scheme != "" && u.Host != "" {
+		return u.Scheme + "://" + u.Host + "/admin"
+	}
+	return "/admin"
 }
 
 func buildTransactionalMessage(st model.SystemSettings, from, to string, email transactionalEmail) ([]byte, string, error) {

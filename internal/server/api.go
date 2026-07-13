@@ -301,7 +301,7 @@ func (s *Server) apiShortLinkDetail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = s.store().Audit(r.Context(), deviceIDFromContext(r.Context()), "short_link.review", "short_link", &id, p.Status, util.ClientIP(r, s.cfg.TrustProxy))
-		s.notifyShortLinkApproved(before, updated, publicShortURL(s.publicBaseURL(r), updated.Code))
+		s.notifyShortLinkReviewed(before, updated, publicShortURL(s.publicBaseURL(r), updated.Code))
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 	case tail == "stats" && r.Method == http.MethodGet:
 		days, _ := strconv.Atoi(r.URL.Query().Get("days"))
@@ -485,7 +485,7 @@ func (s *Server) apiLiveQRDetail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = s.store().Audit(r.Context(), deviceIDFromContext(r.Context()), "live_qr.review", "live_qr", &id, p.Status, util.ClientIP(r, s.cfg.TrustProxy))
-		s.notifyLiveQRApproved(before, updated, publicLiveURL(s.publicBaseURL(r), updated.Code))
+		s.notifyLiveQRReviewed(before, updated, publicLiveURL(s.publicBaseURL(r), updated.Code))
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 	case tail == "items" && r.Method == http.MethodGet:
 		items, err := s.store().ListLiveQRItems(r.Context(), id)
@@ -630,7 +630,7 @@ func (s *Server) apiLiveQRItemDetail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = s.store().Audit(r.Context(), deviceIDFromContext(r.Context()), "live_qr_item.review", "live_qr_item", &id, p.Status, util.ClientIP(r, s.cfg.TrustProxy))
-		s.notifyLiveQRItemApproved(before, updated, live, publicLiveURL(s.publicBaseURL(r), live.Code))
+		s.notifyLiveQRItemReviewed(before, updated, live, publicLiveURL(s.publicBaseURL(r), live.Code))
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 	case http.MethodDelete:
 		err := s.store().DeleteLiveQRItem(r.Context(), id)

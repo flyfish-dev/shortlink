@@ -145,7 +145,7 @@ Configure SMTP during setup or under system settings. For reliable transactional
 - Keep login and approval messages transactional; do not add promotional copy or tracking redirects.
 - Test text and HTML alternatives with a real mailbox before launch.
 
-The application prevents repeated Magic Link sends to the same email while an active request is pending. Operators should still apply upstream rate limits appropriate to their exposure.
+The application prevents repeated Magic Link sends to the same email while an active request is pending. Opening a link performs validation only; the token is consumed after the user confirms sign-in, so mail-security prefetches cannot invalidate it. Operators should still apply upstream rate limits appropriate to their exposure.
 
 ## Nginx reverse proxy
 

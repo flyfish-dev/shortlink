@@ -19,12 +19,16 @@ type approvalNotification struct {
 	Code           string
 	ParentTitle    string
 	PublicURL      string
-	ApprovedAt     time.Time
+	Decision       string
+	ReviewNote     string
+	ReviewedAt     time.Time
 	RecipientName  string
 }
 
-func approvalBecameApproved(before, after string) bool {
-	return strings.TrimSpace(before) != "approved" && strings.TrimSpace(after) == "approved"
+func reviewDecisionChanged(before, after string) bool {
+	before = strings.TrimSpace(before)
+	after = strings.TrimSpace(after)
+	return before != after && (after == "approved" || after == "rejected")
 }
 
 func reviewTime(approvedAt, reviewedAt *time.Time) time.Time {
@@ -37,8 +41,8 @@ func reviewTime(approvedAt, reviewedAt *time.Time) time.Time {
 	return time.Now()
 }
 
-func (s *Server) notifyShortLinkApproved(before, after *model.ShortLink, publicURL string) {
-	if before == nil || after == nil || !approvalBecameApproved(before.ApprovalStatus, after.ApprovalStatus) {
+func (s *Server) notifyShortLinkReviewed(before, after *model.ShortLink, publicURL string) {
+	if before == nil || after == nil || !reviewDecisionChanged(before.ApprovalStatus, after.ApprovalStatus) {
 		return
 	}
 	s.sendApprovalNotificationAsync(approvalNotification{
@@ -48,12 +52,14 @@ func (s *Server) notifyShortLinkApproved(before, after *model.ShortLink, publicU
 		Title:          firstNonEmpty(after.Title, after.Code),
 		Code:           after.Code,
 		PublicURL:      publicURL,
-		ApprovedAt:     reviewTime(after.ApprovedAt, after.ReviewedAt),
+		Decision:       after.ApprovalStatus,
+		ReviewNote:     after.ReviewNote,
+		ReviewedAt:     reviewTime(after.ApprovedAt, after.ReviewedAt),
 	})
 }
 
-func (s *Server) notifyLiveQRApproved(before, after *model.LiveQR, publicURL string) {
-	if before == nil || after == nil || !approvalBecameApproved(before.ApprovalStatus, after.ApprovalStatus) {
+func (s *Server) notifyLiveQRReviewed(before, after *model.LiveQR, publicURL string) {
+	if before == nil || after == nil || !reviewDecisionChanged(before.ApprovalStatus, after.ApprovalStatus) {
 		return
 	}
 	s.sendApprovalNotificationAsync(approvalNotification{
@@ -63,12 +69,14 @@ func (s *Server) notifyLiveQRApproved(before, after *model.LiveQR, publicURL str
 		Title:          firstNonEmpty(after.Title, after.Code),
 		Code:           after.Code,
 		PublicURL:      publicURL,
-		ApprovedAt:     reviewTime(after.ApprovedAt, after.ReviewedAt),
+		Decision:       after.ApprovalStatus,
+		ReviewNote:     after.ReviewNote,
+		ReviewedAt:     reviewTime(after.ApprovedAt, after.ReviewedAt),
 	})
 }
 
-func (s *Server) notifyLiveQRItemApproved(before, after *model.LiveQRItem, live *model.LiveQR, publicURL string) {
-	if before == nil || after == nil || live == nil || !approvalBecameApproved(before.ApprovalStatus, after.ApprovalStatus) {
+func (s *Server) notifyLiveQRItemReviewed(before, after *model.LiveQRItem, live *model.LiveQR, publicURL string) {
+	if before == nil || after == nil || live == nil || !reviewDecisionChanged(before.ApprovalStatus, after.ApprovalStatus) {
 		return
 	}
 	s.sendApprovalNotificationAsync(approvalNotification{
@@ -79,7 +87,9 @@ func (s *Server) notifyLiveQRItemApproved(before, after *model.LiveQRItem, live 
 		Code:           live.Code,
 		ParentTitle:    firstNonEmpty(live.Title, live.Code),
 		PublicURL:      publicURL,
-		ApprovedAt:     reviewTime(after.ApprovedAt, after.ReviewedAt),
+		Decision:       after.ApprovalStatus,
+		ReviewNote:     after.ReviewNote,
+		ReviewedAt:     reviewTime(after.ApprovedAt, after.ReviewedAt),
 	})
 }
 
@@ -91,7 +101,7 @@ func (s *Server) sendApprovalNotificationAsync(n approvalNotification) {
 		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 		if err := s.sendApprovalNotification(ctx, n); err != nil {
-			log.Printf("approval notification %s:%d: %v", n.ResourceType, n.ResourceID, err)
+			log.Printf("review notification %s:%d (%s): %v", n.ResourceType, n.ResourceID, n.Decision, err)
 		}
 	}()
 }

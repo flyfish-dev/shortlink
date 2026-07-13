@@ -66,7 +66,7 @@ The current release focuses on dependable link infrastructure. **It does not cal
 | Short links | Custom codes, redirect types, schedules, visit limits, fallback URLs, QR codes, analytics |
 | Live QR operations | Stable entry, multi-code pools, ordering, weights, rotation strategies, transactional saves |
 | Branded QR codes | classic / rounded / dots, colors, center logo, live preview, SVG / PNG / WEBP export |
-| Team workflow | Multi-user ownership, admin review, approval email, audit records |
+| Team workflow | Multi-user ownership, admin review, approval/rejection email, audit records |
 | Authentication | Magic Link, GitHub OAuth, trusted-browser login, recovery key, account status controls |
 | Analytics | 30-day trends, unique IPs, device/browser breakdowns, display and long-press intent events |
 | Deployment | Docker, Linux amd64 binary, Render, SQLite, MySQL / MariaDB |

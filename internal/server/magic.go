@@ -103,7 +103,26 @@ func (s *Server) magicConsume(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}
-	token := strings.TrimSpace(r.URL.Query().Get("token"))
+	w.Header().Set("Cache-Control", "no-store, max-age=0")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		w.Header().Set("Allow", "GET, POST")
+		s.renderPublicError(w, r, http.StatusMethodNotAllowed, "请求方式不支持", "请从邮件中重新打开登录链接。")
+		return
+	}
+
+	// GET is intentionally validation-only. Mail providers and corporate security
+	// gateways commonly prefetch links; consuming the token on GET would let a
+	// scanner invalidate the Magic Link before the user can open it.
+	token := ""
+	if r.Method == http.MethodGet {
+		token = strings.TrimSpace(r.URL.Query().Get("token"))
+	} else {
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+		if err := r.ParseForm(); err == nil {
+			token = strings.TrimSpace(r.PostForm.Get("token"))
+		}
+	}
 	if token == "" {
 		s.renderPublicError(w, r, http.StatusBadRequest, "登录链接无效", "Magic Link 缺少登录令牌。")
 		return
@@ -130,6 +149,28 @@ func (s *Server) magicConsume(w http.ResponseWriter, r *http.Request) {
 		s.renderPublicError(w, r, http.StatusUnauthorized, "账户不可用", "该登录链接对应的账户不存在或已停用。")
 		return
 	}
+	if r.Method == http.MethodGet {
+		st := s.settings(r.Context())
+		view := map[string]any{
+			"AppName":    s.appName(r.Context()),
+			"Lang":       "zh-CN",
+			"Title":      "确认邮箱登录",
+			"Message":    "登录链接有效。点击下方按钮后，系统才会使用这次一次性登录凭证。",
+			"ButtonText": "确认登录",
+			"Footnote":   "Magic Link 仅可成功使用一次，且会在邮件所示时间过期。",
+			"Token":      token,
+		}
+		if strings.HasPrefix(strings.ToLower(st.DefaultLocale), "en") {
+			view["Lang"] = "en"
+			view["Title"] = "Confirm email sign-in"
+			view["Message"] = "This login link is valid. The one-time credential is used only after you confirm below."
+			view["ButtonText"] = "Confirm sign-in"
+			view["Footnote"] = "A Magic Link can be used successfully only once and expires at the time shown in the email."
+		}
+		s.render(w, r, "magic_confirm.html", view)
+		return
+	}
+
 	ip := util.ClientIP(r, s.cfg.TrustProxy)
 	browserID, err := s.auth.EnsureBrowserID(w, r)
 	if err != nil {
