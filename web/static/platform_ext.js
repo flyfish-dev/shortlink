@@ -93,6 +93,8 @@
     $('#pageTitle').textContent = txt('用户管理','Users');
     $('#pageDesc').textContent = txt('管理来自互联网的普通用户与管理员权限。','Manage public users and admin permissions.');
     $('#createBtn').style.display = 'none';
+    const createMenu = $('#createMenu');
+    if (createMenu) createMenu.style.display = 'none';
     $$('.nav').forEach(n => n.classList.toggle('active', n.dataset.view === 'users'));
   }
   async function renderUsers() {

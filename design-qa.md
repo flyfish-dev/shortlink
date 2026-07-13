@@ -2,10 +2,9 @@
 
 ## Source and implementation
 
-- Selected source: `/Users/wangyu/.codex/generated_images/019f5aba-859b-7311-bb1e-c78937011ed2/exec-231e78bc-2888-49af-adf6-50ecdf7d8bb9.png`
-- Final implementation capture: `/Users/wangyu/.codex/visualizations/2026/07/13/019f5aba-859b-7311-bb1e-c78937011ed2/modern-dashboard-1487x1058-final-clean2.jpg`
-- Final side-by-side comparison: `/Users/wangyu/.codex/visualizations/2026/07/13/019f5aba-859b-7311-bb1e-c78937011ed2/dashboard-comparison-final-clean2.jpg`
-- Viewport: 1487 × 1058 CSS pixels, DPR 1
+- Direction: a restrained operations console with a fixed navigation rail, compact
+  controls, clear data hierarchy, and consistent light and dark themes.
+- Viewports: 1487 x 1058, 1024 x 768, and 390 x 844 CSS pixels at DPR 1
 - State: authenticated administrator, light theme, dashboard, six pending review rows, command search empty
 
 ## Evidence
@@ -15,8 +14,8 @@
 - Color and surfaces: indigo primary actions, low-contrast gray page background, white panels, semantic green/amber/red states, restrained borders, and soft shadows match the selected direction.
 - Icons: self-hosted Phosphor regular and duotone fonts render consistently across navigation, metrics, buttons, states, forms, and menus.
 - Behavior: dashboard navigation, modal open/cancel, dark/light theme switching, global search, quick-create menu, short-link filtering, and user management were exercised successfully.
-- Responsiveness: verified at 1487 × 1058, 1024 × 768, and 390 × 844. The page has no document-level horizontal overflow; compact tables scroll inside their own surface.
-- Accessibility: semantic labels and visible focus styles remain present, reduced-motion overrides are included, and mobile navigation/preference controls use practical tap targets.
+- Responsiveness: verified at 1487 x 1058, 1024 x 768, and 390 x 844. The page has no document-level horizontal overflow; compact tables scroll inside their own surface.
+- Accessibility: semantic labels and visible focus styles remain present, reduced-motion overrides are included, and icon-only mobile navigation exposes translated accessible names with practical tap targets.
 - Runtime: browser console contained no errors and the Phosphor fonts reported `loaded`.
 
 ## QA history
@@ -29,8 +28,16 @@
 
 ### Pass 2
 
-- Re-captured at the exact 1487 × 1058 source dimensions.
+- Re-captured at the exact 1487 x 1058 source dimensions.
 - All review actions remained within their panel, the quick-create surface remained visible within the viewport, document width matched viewport width, dark mode preserved contrast, and key flows remained functional.
 - No unresolved P0, P1, or P2 findings.
+
+### Pass 3
+
+- Removed the duplicate dashboard creation action and kept a single context-aware entry point.
+- Preserved button icons across loading states and synchronized the localized profile role and document title without a reload.
+- Kept the language and theme capsule fixed at the mobile top-right without obscuring the primary content.
+- Raised mobile dialogs above the sticky navigation and verified short-link and live-QR creation flows at 390 x 844.
+- Verified system-setting field alignment at 1024 x 768 and confirmed that the browser console remained error-free.
 
 Final result: passed

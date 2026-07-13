@@ -77,7 +77,7 @@ button,
   font-size: 14px;
   font-weight: 720;
   line-height: 1.2;
-  letter-spacing: -.01em;
+  letter-spacing: 0;
   box-shadow: none;
   transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
 }
@@ -228,7 +228,7 @@ select:focus {
   color: var(--text);
   font-size: 16px;
   font-weight: 800;
-  letter-spacing: -.025em;
+  letter-spacing: 0;
 }
 
 .sidebar nav {
@@ -243,7 +243,7 @@ select:focus {
   color: var(--muted);
   font-size: 11px;
   font-weight: 760;
-  letter-spacing: .08em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -368,10 +368,10 @@ select:focus {
 .topbar h1 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(31px, 3vw, 40px);
+  font-size: 36px;
   font-weight: 820;
   line-height: 1.08;
-  letter-spacing: -.045em;
+  letter-spacing: 0;
 }
 
 .topbar p {
@@ -587,10 +587,10 @@ select:focus {
 
 .metric-card .metric {
   color: var(--text);
-  font-size: clamp(28px, 2.7vw, 36px);
+  font-size: 34px;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -.035em;
+  letter-spacing: 0;
 }
 
 .dashboard-workspace {
@@ -625,7 +625,7 @@ select:focus {
   font-size: 18px;
   font-weight: 760;
   line-height: 1.35;
-  letter-spacing: -.02em;
+  letter-spacing: 0;
 }
 
 .panel-heading p,
@@ -685,7 +685,7 @@ select:focus {
   background: var(--panel-soft);
   color: var(--muted);
   font-weight: 680;
-  letter-spacing: .01em;
+  letter-spacing: 0;
 }
 
 .review-table tbody tr { transition: background-color .16s ease; }
@@ -971,7 +971,7 @@ th {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: .01em;
+  letter-spacing: 0;
 }
 
 tbody tr { transition: background-color .16s ease; }
@@ -1009,11 +1009,11 @@ tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 30%, var(--p
 .empty strong { color: var(--text); font-size: 14px; }
 
 /* Forms, settings, modal and feedback */
-.modal { padding: 22px; }
+.modal { z-index: 100; padding: 22px; }
 .modal-backdrop { background: rgba(16, 24, 40, .54); backdrop-filter: blur(6px); }
 .modal-card { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: var(--shadow-lg); animation: modal-enter .24s ease both; }
 .modal-head { padding: 18px 22px; border-bottom-color: var(--line); background: color-mix(in srgb, var(--panel) 94%, transparent); }
-.modal-head h2 { font-size: 20px; font-weight: 760; letter-spacing: -.02em; }
+.modal-head h2 { font-size: 20px; font-weight: 760; letter-spacing: 0; }
 .modal-head .icon { width: 36px; min-height: 36px; height: 36px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-soft); color: var(--muted); }
 .modal-head .icon:hover { color: var(--text); }
 .form-grid { gap: 14px; padding: 22px; }
@@ -1068,10 +1068,10 @@ tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 30%, var(--p
 
 .login-card.auth-card { background: var(--panel); }
 .login-brand-panel .login-logo { border-radius: 14px; }
-.login-brand-panel h1 { font-size: clamp(42px, 5vw, 60px); font-weight: 820; letter-spacing: -.05em; }
+.login-brand-panel h1 { font-size: 52px; font-weight: 820; letter-spacing: 0; }
 .login-kicker { color: var(--primary); }
 .auth-highlights span { border-color: color-mix(in srgb, var(--primary) 22%, var(--line)); background: var(--panel); color: var(--primary); }
-.login-card-head h2 { font-size: clamp(27px, 3vw, 34px); font-weight: 780; }
+.login-card-head h2 { font-size: 32px; font-weight: 780; }
 .login-card.auth-card input,
 .login-card.auth-card button { border-radius: 10px; }
 
@@ -1084,12 +1084,12 @@ tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 30%, var(--p
 }
 
 .setup-card { width: min(980px, 100%); }
-.setup-head h1 { font-size: 30px; letter-spacing: -.03em; }
+.setup-head h1 { font-size: 30px; letter-spacing: 0; }
 .setup-tabs { gap: 6px; }
 .setup-tabs .tab { flex: 1; }
 
 .qr-card { padding: clamp(24px, 4vw, 36px); }
-.qr-card h1 { letter-spacing: -.035em; }
+.qr-card h1 { letter-spacing: 0; }
 .qr-wrap { border-color: var(--line); border-radius: 18px; box-shadow: var(--shadow-md); }
 .hint-steps span { border-color: var(--line); border-radius: 10px; background: var(--panel-soft); }
 
@@ -1173,20 +1173,22 @@ html[data-theme="dark"] .login-brand-panel { background: var(--primary-soft); }
   .nav { width: 44px; min-width: 44px; min-height: 44px; justify-content: center; padding: 8px; }
   .main { padding: 18px 14px 24px; }
   .topbar h1 { font-size: 30px; }
-  .top-actions { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
-  .top-actions > button { width: 100%; min-width: 0; }
+  .top-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .top-actions > button { flex: 1 1 140px; width: auto; min-width: 0; }
   .top-actions > button,
   .header-controls .theme-switch,
   .header-controls .lang-switch { min-height: 44px; height: 44px; }
   .shell .header-controls,
   .login-card.auth-card .auth-tools {
-    position: static;
-    inset: auto;
-    z-index: auto;
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 70;
     margin: 0;
     padding: 2px;
-    backdrop-filter: none;
-    box-shadow: var(--shadow-sm);
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 30px rgba(16, 24, 40, .14);
   }
   .create-menu { display: none; }
   .header-controls { grid-column: auto; justify-self: auto; }
@@ -1223,8 +1225,7 @@ html[data-theme="dark"] .login-brand-panel { background: var(--primary-soft); }
 }
 
 @media (max-width: 480px) {
-  .top-actions { grid-template-columns: 1fr 1fr; }
-  .header-controls { grid-column: 1 / -1; justify-self: end; }
+  .top-actions { display: flex; }
   .dashboard-metrics { grid-template-columns: 1fr; }
   .metric-card { min-height: 96px; }
   .quick-create-panel { padding: 16px; }
