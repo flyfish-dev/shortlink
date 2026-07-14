@@ -1040,7 +1040,7 @@ async function init() {
       globalSearch?.focus();
     }
   });
-  modal.addEventListener('click', (e) => { if (e.target.dataset.close) closeModal(); });
+  modal.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   try { await loadMe(); } catch (err) { toast(err.message || '账户信息加载失败'); }
   document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));

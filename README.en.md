@@ -35,9 +35,9 @@
 
 ## Product preview
 
-![AI Shortlink product demo](docs/assets/ai-shortlink-demo.gif)
+![AI Shortlink modern admin console demo](docs/assets/ai-shortlink-demo.gif)
 
-The recording comes from a real instance and covers the dashboard, compact table actions, short links, live QR pools, branded QR customization, multi-format downloads, and system settings. The current production build is available at [s.flyfish.dev](https://s.flyfish.dev).
+The recording comes from a real instance and moves through the operations dashboard, compact short-link actions, live QR entry configuration, QR pools, and SVG / PNG / WEBP publishing. The current production build is available at [s.flyfish.dev](https://s.flyfish.dev).
 
 ## Why AI Shortlink
 

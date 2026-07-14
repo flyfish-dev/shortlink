@@ -36,9 +36,9 @@
 
 ## 产品预览
 
-![AI Shortlink 功能录屏](docs/assets/ai-shortlink-demo.gif)
+![AI Shortlink 新版管理控制台演示](docs/assets/ai-shortlink-demo.gif)
 
-录屏来自真实实例，覆盖总览、短链管理、折叠操作、活码二维码池、品牌二维码定制、多格式下载和系统设置。可直接访问 [s.flyfish.dev](https://s.flyfish.dev) 体验当前生产版本。
+录屏来自真实实例，依次展示运营总览、短链折叠操作、活码入口配置、二维码池和 SVG / PNG / WEBP 发布下载。可直接访问 [s.flyfish.dev](https://s.flyfish.dev) 体验当前生产版本。
 
 ## 为什么是 AI Shortlink
 
