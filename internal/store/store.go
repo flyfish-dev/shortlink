@@ -376,7 +376,15 @@ func (s *Store) OverviewForAccount(ctx context.Context, accountID int64, isAdmin
 
 func (s *Store) CreateShortLink(ctx context.Context, in *model.ShortLink) (*model.ShortLink, error) {
 	normalizeShortLink(in)
-	res, err := s.db.ExecContext(ctx, `INSERT INTO short_links(owner_account_id,code,title,target_url,status,approval_status,redirect_type,starts_at,expires_at,max_visits,fallback_url,remark,qr_style,qr_foreground,qr_background,qr_logo_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, in.TargetURL, in.Status, "pending", in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL))
+	var tenantID any
+	if in.OwnerAccountID > 0 {
+		tenant, _, err := s.EnsurePersonalTenant(ctx, in.OwnerAccountID)
+		if err != nil {
+			return nil, err
+		}
+		tenantID = tenant.ID
+	}
+	res, err := s.db.ExecContext(ctx, `INSERT INTO short_links(owner_account_id,tenant_id,code,title,target_url,status,approval_status,redirect_type,starts_at,expires_at,max_visits,fallback_url,remark,qr_style,qr_foreground,qr_background,qr_logo_url,content_version,approved_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), tenantID, in.Code, in.Title, in.TargetURL, in.Status, "tenant_pending", in.RedirectType, in.StartsAt, in.ExpiresAt, in.MaxVisits, nullString(in.FallbackURL), nullString(in.Remark), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL), 1, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -562,7 +570,15 @@ func scanShort(scanner interface{ Scan(dest ...any) error }) (*model.ShortLink, 
 
 func (s *Store) CreateLiveQR(ctx context.Context, in *model.LiveQR) (*model.LiveQR, error) {
 	normalizeLiveQR(in)
-	res, err := s.db.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background,qr_logo_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), in.Code, in.Title, nullString(in.Description), in.Status, "pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL))
+	var tenantID any
+	if in.OwnerAccountID > 0 {
+		tenant, _, err := s.EnsurePersonalTenant(ctx, in.OwnerAccountID)
+		if err != nil {
+			return nil, err
+		}
+		tenantID = tenant.ID
+	}
+	res, err := s.db.ExecContext(ctx, `INSERT INTO live_qrs(owner_account_id,tenant_id,code,title,description,status,approval_status,rotation_strategy,guide_title,guide_text,fallback_url,qr_style,qr_foreground,qr_background,qr_logo_url,content_version,approved_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, nullInt64(in.OwnerAccountID), tenantID, in.Code, in.Title, nullString(in.Description), in.Status, "tenant_pending", in.RotationStrategy, in.GuideTitle, in.GuideText, nullString(in.FallbackURL), in.QRStyle, in.QRForeground, in.QRBackground, nullString(in.QRLogoURL), 1, 0)
 	if err != nil {
 		return nil, err
 	}

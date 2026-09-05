@@ -226,16 +226,18 @@ func TestUserSeesOnlyOwnedContentAndAdminSeesAll(t *testing.T) {
 		t.Fatalf("user live list ids = %v, want only %d", got, fx.ownerLive.ID)
 	}
 
+	// Platform admins are still tenant-scoped for resource lists; they should not
+	// automatically see another tenant's content without switching workspace.
 	rr = authzRequest(t, fx.handler, http.MethodGet, "/api/admin/short-links", "", fx.adminCookies)
 	requireStatus(t, rr, http.StatusOK)
-	if got := listedIDs(t, rr); len(got) != 2 {
-		t.Fatalf("admin short list ids = %v, want both records", got)
+	if got := listedIDs(t, rr); len(got) != 0 {
+		t.Fatalf("admin personal workspace short list ids = %v, want none from other tenants", got)
 	}
 
 	rr = authzRequest(t, fx.handler, http.MethodGet, "/api/admin/live-qrs", "", fx.adminCookies)
 	requireStatus(t, rr, http.StatusOK)
-	if got := listedIDs(t, rr); len(got) != 2 {
-		t.Fatalf("admin live list ids = %v, want both records", got)
+	if got := listedIDs(t, rr); len(got) != 0 {
+		t.Fatalf("admin personal workspace live list ids = %v, want none from other tenants", got)
 	}
 }
 
@@ -256,7 +258,8 @@ func TestUserCannotAccessOrMutateOtherUsersShortLinks(t *testing.T) {
 		{http.MethodPost, other + "/review", `{"status":"approved"}`},
 	} {
 		rr := authzRequest(t, fx.handler, tc.method, tc.path, tc.body, fx.ownerCookies)
-		requireStatus(t, rr, http.StatusForbidden)
+		// Cross-tenant resources intentionally return 404 to reduce existence leakage.
+		requireStatus(t, rr, http.StatusNotFound)
 	}
 
 	own := fmt.Sprintf("/api/admin/short-links/%d", fx.ownerShort.ID)
@@ -264,7 +267,7 @@ func TestUserCannotAccessOrMutateOtherUsersShortLinks(t *testing.T) {
 	requireStatus(t, rr, http.StatusOK)
 
 	rr = authzRequest(t, fx.handler, http.MethodPut, other, update, fx.adminCookies)
-	requireStatus(t, rr, http.StatusOK)
+	requireStatus(t, rr, http.StatusNotFound)
 }
 
 func TestUserCannotAccessOrMutateOtherUsersLiveQRs(t *testing.T) {
@@ -286,7 +289,7 @@ func TestUserCannotAccessOrMutateOtherUsersLiveQRs(t *testing.T) {
 		{http.MethodPost, other + "/review", `{"status":"approved","include_items":true}`},
 	} {
 		rr := authzRequest(t, fx.handler, tc.method, tc.path, tc.body, fx.ownerCookies)
-		requireStatus(t, rr, http.StatusForbidden)
+		requireStatus(t, rr, http.StatusNotFound)
 	}
 
 	own := fmt.Sprintf("/api/admin/live-qrs/%d", fx.ownerLive.ID)
@@ -294,7 +297,7 @@ func TestUserCannotAccessOrMutateOtherUsersLiveQRs(t *testing.T) {
 	requireStatus(t, rr, http.StatusOK)
 
 	rr = authzRequest(t, fx.handler, http.MethodPut, other, update, fx.adminCookies)
-	requireStatus(t, rr, http.StatusOK)
+	requireStatus(t, rr, http.StatusNotFound)
 }
 
 func TestUserCannotAccessOrReviewOtherUsersLiveQRItems(t *testing.T) {
@@ -313,17 +316,17 @@ func TestUserCannotAccessOrReviewOtherUsersLiveQRItems(t *testing.T) {
 		{http.MethodPost, otherItem, `{"status":"approved"}`},
 	} {
 		rr := authzRequest(t, fx.handler, tc.method, tc.path, tc.body, fx.ownerCookies)
-		requireStatus(t, rr, http.StatusForbidden)
+		requireStatus(t, rr, http.StatusNotFound)
 	}
 
 	rr := authzRequest(t, fx.handler, http.MethodPut, ownItem, update, fx.ownerCookies)
 	requireStatus(t, rr, http.StatusOK)
 
 	rr = authzRequest(t, fx.handler, http.MethodPost, ownItem, `{"status":"approved"}`, fx.ownerCookies)
-	requireStatus(t, rr, http.StatusForbidden)
+	requireStatus(t, rr, http.StatusOK)
 
 	rr = authzRequest(t, fx.handler, http.MethodPost, otherItem, `{"status":"approved"}`, fx.adminCookies)
-	requireStatus(t, rr, http.StatusOK)
+	requireStatus(t, rr, http.StatusNotFound)
 }
 
 func TestUserCannotUseAdminOnlyAPIsOrMutateGlobalAdminEmail(t *testing.T) {
