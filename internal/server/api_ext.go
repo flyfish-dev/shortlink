@@ -9,6 +9,9 @@ import (
 
 func (s *Server) adminAPIExt(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/api/admin")
+	if s.adminAPISaaS(w, r, path) {
+		return
+	}
 	switch {
 	case path == "/overview" && r.Method == http.MethodGet:
 		s.apiExtOverview(w, r)

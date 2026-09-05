@@ -91,7 +91,7 @@ func (s *Server) Routes() http.Handler {
 
 	mux.Handle("/admin", s.requireAuthPage(http.HandlerFunc(s.adminPage)))
 	mux.Handle("/admin/", s.requireAuthPage(http.HandlerFunc(s.adminPage)))
-	for _, prefix := range []string{"/api/admin/users", "/api/admin/users/", "/api/admin/settings", "/api/admin/overview", "/api/admin/short-links", "/api/admin/short-links/", "/api/admin/live-qrs", "/api/admin/live-qrs/", "/api/admin/live-qr-items", "/api/admin/live-qr-items/"} {
+	for _, prefix := range []string{"/api/admin/users", "/api/admin/users/", "/api/admin/settings", "/api/admin/overview", "/api/admin/short-links", "/api/admin/short-links/", "/api/admin/live-qrs", "/api/admin/live-qrs/", "/api/admin/live-qr-items", "/api/admin/live-qr-items/", "/api/admin/saas", "/api/admin/saas/"} {
 		mux.Handle(prefix, s.requireAuthAPI(http.HandlerFunc(s.adminAPIExt)))
 	}
 	mux.Handle("/api/admin/", s.requireAuthAPI(http.HandlerFunc(s.adminAPI)))

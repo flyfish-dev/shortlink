@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -46,10 +45,13 @@ func (s *Server) redirectCode(w http.ResponseWriter, r *http.Request, code strin
 	target := sl.TargetURL
 	now := time.Now()
 	blockedMsg := ""
+	tenantID, _ := s.store().ResourceTenantID(r.Context(), "short_link", sl.ID)
+	var targetID *int64
+	strategy := "single"
 	switch {
 	case sl.ApprovalStatus != "approved":
 		status = "not_approved"
-		blockedMsg = "该短链尚未通过管理员审核。"
+		blockedMsg = "该短链尚未完成租户初审和平台终审。"
 	case sl.Status != "active":
 		status = "disabled"
 		blockedMsg = "该短链已停用。"
@@ -63,23 +65,55 @@ func (s *Server) redirectCode(w http.ResponseWriter, r *http.Request, code strin
 		status = "limit_reached"
 		blockedMsg = "该短链访问次数已达到上限。"
 	}
+
+	if status == "ok" {
+		clientKey := s.auth.Hash(util.ClientIP(r, s.cfg.TrustProxy))
+		decision, routeErr := s.store().SelectShortTargetForVisit(r.Context(), sl.ID, clientKey)
+		if routeErr == nil {
+			tenantID = decision.TenantID
+			targetID = decision.TargetID
+			target = decision.TargetURL
+			strategy = decision.Strategy
+		} else {
+			switch {
+			case errors.Is(routeErr, store.ErrNotPublished):
+				status = "not_approved"
+				blockedMsg = "该短链当前内容版本尚未完成两级审批。"
+			case errors.Is(routeErr, store.ErrVisitLimitReached):
+				status = "limit_reached"
+				blockedMsg = "该短链访问次数已达到上限。"
+			case errors.Is(routeErr, store.ErrSubscriptionInactive):
+				status = "subscription_inactive"
+				blockedMsg = "该工作空间的订阅当前不可用。"
+			case errors.Is(routeErr, store.ErrQuotaExceeded):
+				status = "tenant_quota_reached"
+				blockedMsg = "该工作空间本月访问额度已用完。"
+			default:
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+		}
+	}
 	if status != "ok" && status != "not_approved" && sl.FallbackURL != "" {
 		target = sl.FallbackURL
-		status = status + ":fallback"
+		status += ":fallback"
 	}
-	s.recordVisit(r, &model.VisitLog{ResourceType: "short_link", ResourceID: sl.ID, Code: sl.Code, EventType: "redirect", Status: status, TargetURL: target})
-	if !strings.HasPrefix(status, "ok") && !strings.Contains(status, "fallback") {
+	s.recordVisitSaaS(r, &model.VisitLog{ResourceType: "short_link", ResourceID: sl.ID, Code: sl.Code, EventType: "redirect", Status: status, TargetURL: target}, tenantID, targetID)
+	if status != "ok" && !strings.Contains(status, ":fallback") {
 		s.renderPublicError(w, r, http.StatusGone, "无法访问", blockedMsg)
 		return
-	}
-	if err := s.store().IncrementShortVisit(r.Context(), sl.ID); err != nil {
-		// Do not block redirect for non-critical stats errors.
-		fmt.Printf("increment visit failed: %v\n", err)
 	}
 	redirectType := sl.RedirectType
 	if redirectType == 0 {
 		redirectType = http.StatusFound
 	}
+	// A load-balanced link must not emit a permanent redirect: browsers and
+	// intermediary caches would pin one selected backend and bypass routing.
+	if strategy != "single" && (redirectType == http.StatusMovedPermanently || redirectType == http.StatusPermanentRedirect) {
+		redirectType = http.StatusFound
+	}
+	w.Header().Set("Cache-Control", "no-store, private")
+	w.Header().Set("Pragma", "no-cache")
 	http.Redirect(w, r, target, redirectType)
 }
 
@@ -98,9 +132,25 @@ func (s *Server) liveQRPublic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	tenantID, _ := s.store().ResourceTenantID(r.Context(), "live_qr", live.ID)
 	if live.ApprovalStatus != "approved" {
-		s.recordVisit(r, &model.VisitLog{ResourceType: "live_qr", ResourceID: live.ID, Code: live.Code, EventType: "visit", Status: "not_approved"})
-		s.renderPublicError(w, r, http.StatusGone, "活码未审核", "该活码尚未通过管理员审核，暂不能使用。")
+		s.recordVisitSaaS(r, &model.VisitLog{ResourceType: "live_qr", ResourceID: live.ID, Code: live.Code, EventType: "visit", Status: "not_approved"}, tenantID, nil)
+		s.renderPublicError(w, r, http.StatusGone, "活码未审核", "该活码尚未完成租户初审和平台终审，暂不能使用。")
+		return
+	}
+	if err := s.store().IncrementTenantVisitForLive(r.Context(), tenantID); err != nil {
+		status := "subscription_inactive"
+		message := "该工作空间的订阅当前不可用。"
+		if errors.Is(err, store.ErrQuotaExceeded) {
+			status = "tenant_quota_reached"
+			message = "该工作空间本月访问额度已用完。"
+		}
+		s.recordVisitSaaS(r, &model.VisitLog{ResourceType: "live_qr", ResourceID: live.ID, Code: live.Code, EventType: "visit", Status: status}, tenantID, nil)
+		if live.FallbackURL != "" {
+			http.Redirect(w, r, live.FallbackURL, http.StatusFound)
+			return
+		}
+		s.renderPublicError(w, r, http.StatusGone, "无法访问", message)
 		return
 	}
 
@@ -118,7 +168,7 @@ func (s *Server) liveQRPublic(w http.ResponseWriter, r *http.Request) {
 	if item == nil {
 		status = "no_active_item"
 		if live.FallbackURL != "" {
-			s.recordVisit(r, &model.VisitLog{ResourceType: "live_qr", ResourceID: live.ID, Code: live.Code, EventType: "visit", Status: "fallback", TargetURL: live.FallbackURL})
+			s.recordVisitSaaS(r, &model.VisitLog{ResourceType: "live_qr", ResourceID: live.ID, Code: live.Code, EventType: "visit", Status: "fallback", TargetURL: live.FallbackURL}, tenantID, nil)
 			http.Redirect(w, r, live.FallbackURL, http.StatusFound)
 			return
 		}
@@ -126,7 +176,7 @@ func (s *Server) liveQRPublic(w http.ResponseWriter, r *http.Request) {
 		itemID = &item.ID
 		target = item.TargetURL
 	}
-	s.recordVisit(r, &model.VisitLog{ResourceType: "live_qr", ResourceID: live.ID, ItemID: itemID, Code: live.Code, EventType: "visit", Status: status, TargetURL: target})
+	s.recordVisitSaaS(r, &model.VisitLog{ResourceType: "live_qr", ResourceID: live.ID, ItemID: itemID, Code: live.Code, EventType: "visit", Status: status, TargetURL: target}, tenantID, nil)
 	if item == nil {
 		s.renderPublicError(w, r, http.StatusGone, "暂无可用二维码", "当前活码下的二维码均未开始、已过期、已停用或达到展示上限。")
 		return
@@ -139,6 +189,26 @@ func (s *Server) liveQRPublic(w http.ResponseWriter, r *http.Request) {
 		"BaseURL":  base,
 		"TrackURL": "/api/public/live-longpress/" + live.Code,
 	})
+}
+
+func (s *Server) recordVisitSaaS(r *http.Request, v *model.VisitLog, tenantID int64, targetID *int64) {
+	ip := util.ClientIP(r, s.cfg.TrustProxy)
+	ua := r.UserAgent()
+	device, browser, osName := util.DetectClient(ua)
+	v.IP = ip
+	v.IPHash = s.auth.Hash(ip)
+	v.UserAgent = util.Truncate(ua, 1024)
+	v.Referer = util.Truncate(r.Referer(), 1000)
+	v.DeviceType = device
+	v.Browser = browser
+	v.OS = osName
+	if v.EventType == "" {
+		v.EventType = "visit"
+	}
+	if v.Status == "" {
+		v.Status = "ok"
+	}
+	_ = s.store().RecordVisitSaaS(r.Context(), v, tenantID, targetID)
 }
 
 func (s *Server) recordVisit(r *http.Request, v *model.VisitLog) {
