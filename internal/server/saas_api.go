@@ -670,11 +670,15 @@ func (s *Server) handleTenantShortLinks(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 		action := normalizeReviewAction("", p.Status)
-		if err := s.store().ReviewResourceTenant(r.Context(), ta.Tenant.ID, ta.Actor.Account.ID, "short_link", id, action, p.Note, false); err != nil {
+		if !s.reviewResourceForCurrentStage(w, r, ta, "short_link", id, current.ApprovalStatus, action, p.Note, false) {
+			return
+		}
+		updated, err := s.store().GetShortLinkForTenant(r.Context(), id, ta.Tenant.ID, false)
+		if err != nil {
 			writeSaaSError(w, err)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 	case tail == "stats" && r.Method == http.MethodGet:
 		days, _ := strconv.Atoi(r.URL.Query().Get("days"))
 		stats, err := s.store().Stats(r.Context(), "short_link", id, days)
@@ -948,11 +952,15 @@ func (s *Server) handleTenantLiveQRs(w http.ResponseWriter, r *http.Request, pat
 		if !decodeBody(w, r, &p) {
 			return
 		}
-		if err := s.store().ReviewResourceTenant(r.Context(), ta.Tenant.ID, ta.Actor.Account.ID, "live_qr", id, normalizeReviewAction("", p.Status), p.Note, p.IncludeItems); err != nil {
+		if !s.reviewResourceForCurrentStage(w, r, ta, "live_qr", id, current.ApprovalStatus, normalizeReviewAction("", p.Status), p.Note, p.IncludeItems) {
+			return
+		}
+		updated, err := s.store().GetLiveQRForTenant(r.Context(), id, ta.Tenant.ID)
+		if err != nil {
 			writeSaaSError(w, err)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 	case tail == "stats" && r.Method == http.MethodGet:
 		days, _ := strconv.Atoi(r.URL.Query().Get("days"))
 		stats, err := s.store().Stats(r.Context(), "live_qr", id, days)
@@ -1040,11 +1048,15 @@ func (s *Server) handleTenantLiveQRItem(w http.ResponseWriter, r *http.Request, 
 		if !decodeBody(w, r, &p) {
 			return
 		}
-		if err := s.store().ReviewResourceTenant(r.Context(), ta.Tenant.ID, ta.Actor.Account.ID, "live_qr_item", id, normalizeReviewAction("", p.Status), p.Note, false); err != nil {
+		if !s.reviewResourceForCurrentStage(w, r, ta, "live_qr_item", id, item.ApprovalStatus, normalizeReviewAction("", p.Status), p.Note, false) {
+			return
+		}
+		updated, err := s.store().GetLiveQRItemByID(r.Context(), id)
+		if err != nil {
 			writeSaaSError(w, err)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "data": updated})
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, apiErr("method", "method not allowed"))
 	}
@@ -1088,6 +1100,24 @@ func normalizeReviewAction(action, status string) string {
 		value = "reject"
 	}
 	return value
+}
+
+func (s *Server) reviewResourceForCurrentStage(w http.ResponseWriter, r *http.Request, ta *tenantRequestActor, resourceType string, resourceID int64, currentStatus, action, note string, includeItems bool) bool {
+	var err error
+	if currentStatus == "platform_pending" || currentStatus == "platform_rejected" {
+		if !ta.Actor.IsAdmin() {
+			writeJSON(w, http.StatusForbidden, apiErr("platform_admin_required", "当前内容等待平台终审"))
+			return false
+		}
+		err = s.store().ReviewResourcePlatform(r.Context(), ta.Actor.Account.ID, resourceType, resourceID, action, note, includeItems)
+	} else {
+		err = s.store().ReviewResourceTenant(r.Context(), ta.Tenant.ID, ta.Actor.Account.ID, resourceType, resourceID, action, note, includeItems)
+	}
+	if err != nil {
+		writeSaaSError(w, err)
+		return false
+	}
+	return true
 }
 
 func splitPath(v string) []string {

@@ -408,7 +408,7 @@ async function renderDashboard() {
   const pendingRows = [
     ...(shorts.data || []).map(row => ({ ...row, kind: 'short' })),
     ...(lives.data || []).map(row => ({ ...row, kind: 'live' })),
-  ].filter(row => (row.approval_status || 'pending') === 'pending')
+  ].filter(row => ['pending', 'tenant_pending', 'platform_pending'].includes(row.approval_status || 'pending'))
     .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
     .slice(0, 6);
   const totalPending = Number(data.short_pending || 0) + Number(data.live_pending || 0) + Number(data.live_items_pending || 0);
@@ -497,21 +497,30 @@ function statusBadge(s) {
   return `<span class="status ${st}">${st === 'active' ? t('common.enabled') : t('common.disabled')}</span>`;
 }
 function approvalBadge(s) {
-  const v = s || 'pending';
-  const label = v === 'approved' ? t('common.approved') : v === 'rejected' ? t('common.rejected') : t('common.pending');
-  return `<span class="status review-${esc(v)}">${label}</span>`;
+  const v = s || 'tenant_pending';
+  const labels = {
+    approved: t('common.approved'),
+    pending: t('common.pending'),
+    rejected: t('common.rejected'),
+    tenant_pending: tx('待初审', 'Tenant review'),
+    platform_pending: tx('待终审', 'Final review'),
+    tenant_rejected: tx('初审驳回', 'Tenant rejected'),
+    platform_rejected: tx('终审驳回', 'Final rejected'),
+  };
+  const tone = v === 'approved' ? 'approved' : (v === 'rejected' || v.endsWith('_rejected')) ? 'rejected' : 'pending';
+  return `<span class="status review-${tone}">${labels[v] || t('common.pending')}</span>`;
 }
 function reviewButtons(type, id, current, includeItems = false, itemIndex = null) {
   if (!isAdminAccount()) return '';
-  const cur = current || 'pending';
+  const cur = current || 'tenant_pending';
+  if (cur === 'approved') return '';
   const attrs = itemIndex === null ? '' : ` data-item-index="${itemIndex}"`;
   const include = includeItems ? ' data-include-items="1"' : '';
   const prefix = `data-review-${type}="${id}"${attrs}${include}`;
-  const out = [];
-  if (cur !== 'approved') out.push(`<button class="review-approve" ${prefix} data-review-status="approved"><i class="ph ph-check" aria-hidden="true"></i>${t('common.approve')}</button>`);
-  if (cur !== 'rejected') out.push(`<button class="review-reject" ${prefix} data-review-status="rejected"><i class="ph ph-x" aria-hidden="true"></i>${t('common.reject')}</button>`);
-  if (cur === 'approved') out.push(`<button class="ghost" ${prefix} data-review-status="pending"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>${t('common.backPending')}</button>`);
-  return out.join('');
+  const finalStage = cur.startsWith('platform_');
+  const approveLabel = finalStage ? tx('终审通过', 'Approve') : tx('提交终审', 'Send to final review');
+  const rejectLabel = finalStage ? tx('终审驳回', 'Reject') : tx('初审驳回', 'Reject');
+  return `<button class="review-approve" ${prefix} data-review-status="approved"><i class="ph ph-check" aria-hidden="true"></i>${approveLabel}</button><button class="review-reject" ${prefix} data-review-status="rejected"><i class="ph ph-x" aria-hidden="true"></i>${rejectLabel}</button>`;
 }
 async function reviewResource(type, id, status, includeItems = false, itemIndex = null) {
   const note = status === 'rejected' ? (prompt(t('msg.needNote')) || '') : '';

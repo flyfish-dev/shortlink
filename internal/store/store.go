@@ -313,10 +313,10 @@ func (s *Store) Overview(ctx context.Context) (*model.Overview, error) {
 		dest *int64
 	}{
 		{"SELECT COUNT(*) FROM short_links", nil, &o.ShortLinks},
-		{"SELECT COUNT(*) FROM short_links WHERE approval_status='pending'", nil, &o.ShortPending},
+		{"SELECT COUNT(*) FROM short_links WHERE approval_status IN ('pending','tenant_pending','platform_pending')", nil, &o.ShortPending},
 		{"SELECT COUNT(*) FROM live_qrs", nil, &o.LiveQRs},
-		{"SELECT COUNT(*) FROM live_qrs WHERE approval_status='pending'", nil, &o.LivePending},
-		{"SELECT COUNT(*) FROM live_qr_items WHERE approval_status='pending'", nil, &o.LiveItemsPending},
+		{"SELECT COUNT(*) FROM live_qrs WHERE approval_status IN ('pending','tenant_pending','platform_pending')", nil, &o.LivePending},
+		{"SELECT COUNT(*) FROM live_qr_items WHERE approval_status IN ('pending','tenant_pending','platform_pending')", nil, &o.LiveItemsPending},
 		{"SELECT COUNT(*) FROM live_qr_items WHERE status='active' AND approval_status='approved' AND (expires_at IS NULL OR expires_at > ?) AND (starts_at IS NULL OR starts_at <= ?)", []any{n, n}, &o.LiveItemsActive},
 		{"SELECT COUNT(*) FROM visit_logs WHERE created_at >= ?", []any{start}, &o.VisitsToday},
 		{"SELECT COUNT(*) FROM visit_logs", nil, &o.VisitsTotal},
@@ -350,10 +350,10 @@ func (s *Store) OverviewForAccount(ctx context.Context, accountID int64, isAdmin
 		dest *int64
 	}{
 		{"SELECT COUNT(*) FROM short_links WHERE owner_account_id=?", []any{accountID}, &o.ShortLinks},
-		{"SELECT COUNT(*) FROM short_links WHERE owner_account_id=? AND approval_status='pending'", []any{accountID}, &o.ShortPending},
+		{"SELECT COUNT(*) FROM short_links WHERE owner_account_id=? AND approval_status IN ('pending','tenant_pending','platform_pending')", []any{accountID}, &o.ShortPending},
 		{"SELECT COUNT(*) FROM live_qrs WHERE owner_account_id=?", []any{accountID}, &o.LiveQRs},
-		{"SELECT COUNT(*) FROM live_qrs WHERE owner_account_id=? AND approval_status='pending'", []any{accountID}, &o.LivePending},
-		{"SELECT COUNT(*) FROM live_qr_items i JOIN live_qrs l ON l.id=i.live_qr_id WHERE l.owner_account_id=? AND i.approval_status='pending'", []any{accountID}, &o.LiveItemsPending},
+		{"SELECT COUNT(*) FROM live_qrs WHERE owner_account_id=? AND approval_status IN ('pending','tenant_pending','platform_pending')", []any{accountID}, &o.LivePending},
+		{"SELECT COUNT(*) FROM live_qr_items i JOIN live_qrs l ON l.id=i.live_qr_id WHERE l.owner_account_id=? AND i.approval_status IN ('pending','tenant_pending','platform_pending')", []any{accountID}, &o.LiveItemsPending},
 		{"SELECT COUNT(*) FROM live_qr_items i JOIN live_qrs l ON l.id=i.live_qr_id WHERE l.owner_account_id=? AND i.status='active' AND i.approval_status='approved' AND (i.expires_at IS NULL OR i.expires_at > ?) AND (i.starts_at IS NULL OR i.starts_at <= ?)", []any{accountID, n, n}, &o.LiveItemsActive},
 		{"SELECT COUNT(*) FROM visit_logs v JOIN short_links s ON s.id=v.resource_id AND v.resource_type='short_link' WHERE s.owner_account_id=? AND v.created_at >= ?", []any{accountID, start}, &o.VisitsToday},
 		{"SELECT COUNT(*) FROM visit_logs v JOIN short_links s ON s.id=v.resource_id AND v.resource_type='short_link' WHERE s.owner_account_id=?", []any{accountID}, &o.VisitsTotal},

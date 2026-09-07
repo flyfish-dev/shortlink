@@ -357,3 +357,44 @@ func TestUserCannotUseAdminOnlyAPIsOrMutateGlobalAdminEmail(t *testing.T) {
 		t.Fatalf("admin_email = %q after admin account update, want updated", got)
 	}
 }
+
+func TestAdminLiveQRItemReviewAdvancesThroughBothStages(t *testing.T) {
+	fx := newAuthorizationFixture(t)
+	ctx := context.Background()
+	live := mustCreateLive(t, fx.st, fx.admin.ID, "admin-review-live", "Admin review live")
+	item := mustCreateLiveItem(t, fx.st, live.ID, "Admin review item")
+	tenant, _, err := fx.st.EnsurePersonalTenant(ctx, fx.admin.ID)
+	if err != nil {
+		t.Fatalf("ensure admin tenant: %v", err)
+	}
+	if err := fx.st.BindLiveQRToTenantAndReset(ctx, live.ID, tenant.ID, true); err != nil {
+		t.Fatalf("bind live qr: %v", err)
+	}
+	if err := fx.st.BindLiveQRItemAndReset(ctx, item.ID, live.ID, tenant.ID, true); err != nil {
+		t.Fatalf("bind live qr item: %v", err)
+	}
+
+	path := fmt.Sprintf("/api/admin/live-qr-items/%d", item.ID)
+	rr := authzRequest(t, fx.handler, http.MethodPost, path, `{"status":"approved"}`, fx.adminCookies)
+	requireStatus(t, rr, http.StatusOK)
+	updated, err := fx.st.GetLiveQRItemByID(ctx, item.ID)
+	if err != nil {
+		t.Fatalf("get item after tenant review: %v", err)
+	}
+	if updated.ApprovalStatus != "platform_pending" {
+		t.Fatalf("status after tenant review = %q, want platform_pending", updated.ApprovalStatus)
+	}
+
+	rr = authzRequest(t, fx.handler, http.MethodPost, path, `{"status":"approved"}`, fx.adminCookies)
+	requireStatus(t, rr, http.StatusOK)
+	updated, err = fx.st.GetLiveQRItemByID(ctx, item.ID)
+	if err != nil {
+		t.Fatalf("get item after platform review: %v", err)
+	}
+	if updated.ApprovalStatus != "approved" {
+		t.Fatalf("status after platform review = %q, want approved", updated.ApprovalStatus)
+	}
+	if !strings.Contains(rr.Body.String(), `"approval_status":"approved"`) {
+		t.Fatalf("review response does not include updated item: %s", rr.Body.String())
+	}
+}
