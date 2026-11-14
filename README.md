@@ -98,6 +98,11 @@ make build
 
 MySQL/MariaDB、GitHub OAuth、HTTPS 反向代理、systemd 和 Render 部署说明见 [部署指南](docs/DEPLOYMENT.md)。
 
+## 一键部署
+
+<a href="https://repocloud.io/details/Shortlink/"><img src="https://d16t0pc4846x52.cloudfront.net/deploylobe.svg" alt="Deploy on RepoCloud" height="42"></a>
+<a href="https://render.com/deploy?repo=https://github.com/flyfish-dev/shortlink"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy on Render" height="42"></a>
+
 ## 系统边界
 
 ```text
